@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="1c049791-e06b-4457-ab1c-f51dacadd353" name="Changes" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="2pTvXl5mzbRnioMBfwwzu70Rh9w" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.IsoTileDemo.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/notre/OneDrive - University of Chester/isometric project/Isometric2d&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;onboarding.tips.debug.path&quot;: &quot;C:/Users/notre/Isometric2d/src/Main.java&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;settings.sync&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\notre\OneDrive - University of Chester\isometric project\Isometric2d\res\player" />
+      <recent name="C:\Users\notre\OneDrive - University of Chester\isometric project\Isometric2d\res" />
+      <recent name="C:\Users\notre\Isometric2d\res\tile" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\2427448\OneDrive - University of Chester\isometric project\Isometric2d\res\player" />
+      <recent name="C:\Users\notre\OneDrive - University of Chester\isometric project\Isometric2d\res\player" />
+      <recent name="C:\Users\notre\Isometric2d\res\player" />
+      <recent name="C:\Users\notre\Isometric2d\res\tile" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fdfe4dae3a2d-intellij.indexing.shared.core-IU-243.21565.193" />
+        <option value="bundled-js-predefined-d6986cc7102b-e768b9ed790e-JavaScript-IU-243.21565.193" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="1c049791-e06b-4457-ab1c-f51dacadd353" name="Changes" comment="" />
+      <created>1732802925861</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1732802925861</updated>
+      <workItem from="1732802927088" duration="85242000" />
+      <workItem from="1733228320761" duration="705000" />
+      <workItem from="1733232857163" duration="6742000" />
+      <workItem from="1733305955876" duration="16000" />
+      <workItem from="1733305977806" duration="11965000" />
+      <workItem from="1733318500276" duration="583000" />
+      <workItem from="1733340736255" duration="8087000" />
+      <workItem from="1733396602614" duration="26046000" />
+      <workItem from="1733430075587" duration="28000" />
+      <workItem from="1733430141910" duration="19000" />
+      <workItem from="1733430304373" duration="7000" />
+      <workItem from="1733430331081" duration="11606000" />
+      <workItem from="1733480617013" duration="33984000" />
+      <workItem from="1733572084860" duration="84000" />
+      <workItem from="1733572179104" duration="13617000" />
+      <workItem from="1733590336208" duration="6452000" />
+      <workItem from="1733605061348" duration="1308000" />
+      <workItem from="1733659694553" duration="27000" />
+      <workItem from="1733659732665" duration="16590000" />
+      <workItem from="1733679816578" duration="121000" />
+      <workItem from="1733681509367" duration="2102000" />
+      <workItem from="1733685574150" duration="64000" />
+      <workItem from="1733743233423" duration="8406000" />
+      <workItem from="1733754268386" duration="57000" />
+      <workItem from="1733754337200" duration="332000" />
+      <workItem from="1733757958636" duration="1959000" />
+      <workItem from="1733772677464" duration="6755000" />
+      <workItem from="1733795620517" duration="1302000" />
+      <workItem from="1733826038950" duration="2724000" />
+      <workItem from="1733830008911" duration="11730000" />
+      <workItem from="1734005741336" duration="656000" />
+      <workItem from="1734007068571" duration="1849000" />
+      <workItem from="1734096540562" duration="10160000" />
+      <workItem from="1734169946439" duration="1238000" />
+      <workItem from="1734172092008" duration="264000" />
+      <workItem from="1734172403038" duration="707000" />
+      <workItem from="1734180267645" duration="1045000" />
+      <workItem from="1734181334639" duration="3337000" />
+      <workItem from="1734256999017" duration="95000" />
+      <workItem from="1734257105964" duration="3180000" />
+      <workItem from="1734524024645" duration="67000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
