@@ -6,13 +6,15 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Player extends Entity {
 
     private final GamePanel gp;
     public MyMouseAdapter myMouseAdapter;
 
-    private BufferedImage currentSprite;
+    public BufferedImage currentSprite;
 
     public int spriteX;
     public int spriteY;
@@ -25,9 +27,21 @@ public class Player extends Entity {
     public boolean in_movement;
 
 
-    public Player(GamePanel gp, MyMouseAdapter myMouseAdapter) {
+    // INFORMATION ABOUT THE PLAYER :
+    public int credits;
+    public String name;
+    public Gender gender;
+    public List<Message> messages = new ArrayList<>();
+
+
+
+
+
+    public Player(GamePanel gp, MyMouseAdapter myMouseAdapter, String name, Gender gender) {
 
         this.gp = gp;
+        this.name = name;
+        this.gender = gender;
 
         setInitialPosition( 0,0);
 
@@ -42,6 +56,8 @@ public class Player extends Entity {
 //        speed = 4; // Movement speed (adjustable)
         loadPlayerImage();
         currentSprite = playerImageDiagonaleUp;
+
+        credits = 56;
 
     }
 
@@ -67,6 +83,10 @@ public class Player extends Entity {
         return y-(3*gp.tileSizeHeight);
     }
 
+
+    public int getCredits(){
+        return credits;
+    }
 
 
     // Load the player's image
@@ -354,49 +374,6 @@ public class Player extends Entity {
     }
 
 
-
-//
-//    public void update() {
-//
-//
-//            if (in_movement) {
-//
-//                if (((xInitial - xFinal) >= 1 && (yInitial - yFinal) >= 1) || ((xFinal - xInitial) >= 1 && (yFinal - yInitial) >= 1) ){
-////                    int alpha = Math.abs(xInitial - xFinal);
-////                    int lambda = Math.abs(yInitial - yFinal);
-////                    if (alpha < lambda){
-////                        System.out.println("debug here please");
-////                        use_of_diagonale(xInitial, yInitial, xInitial - alpha, yInitial - alpha);
-////                    }
-//                    use_of_diagonale(xInitial, xFinal, yInitial, yFinal);
-//                }
-////
-//
-//                else if (xInitial != xFinal && yInitial == yFinal) {
-//                    use_isoX_method(xInitial, xFinal, yInitial, yFinal);
-//                }
-//                else if (xInitial == xFinal && yInitial != yFinal) {
-//                    use_isoY_method(xInitial, xFinal, yInitial, yFinal);
-//                }
-//                else{
-//                    use_right_left_method(xInitial, xFinal, yInitial, yFinal);
-//                }
-//
-////
-////                else {
-////                    other_method(xInitial, xFinal, yInitial, yFinal);
-////
-////                }
-//            }
-////
-////            if (keep_movement){
-////
-////            }
-//
-//
-//    }
-////
-
     public void update() {
         if (in_movement) {
 
@@ -629,6 +606,24 @@ public void map_function(){
             g2d.drawImage(currentSprite, spriteX, spriteY, 2*gp.tileSizeWidth, (4)*gp.tileSizeHeight, null);
         }
 
+    }
+
+
+
+
+
+
+    
+    // Message class to store text and position
+    public static class Message {
+        public String text;
+        public int y;
+        public int adjustedY;
+
+        public Message(String text, int y) {
+            this.text = text;
+            this.y = y;
+        }
     }
 
 }

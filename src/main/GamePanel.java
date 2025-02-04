@@ -1,11 +1,18 @@
 package main;
 
 import Entity.Player;
+import Entity.Entity.Gender;
+import message.ChatBox;
+import Entity.Player.Message;
+import message.Profile;
 import mouse.HandleMouseHover;
 import mouse.MyMouseAdapter;
 import tile.TileManager;
 import java.awt.event.MouseEvent;
-
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionAdapter;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.*;
 import java.awt.*;
@@ -72,7 +79,24 @@ public class GamePanel extends JPanel implements Runnable {
     KeyHandler key_handler = new KeyHandler();
     public TileManager tile_manager = new TileManager(this);
     MyMouseAdapter mouse_adapter = new MyMouseAdapter(this);
-    public Player player = new Player(this, mouse_adapter);
+    public Player player = new Player(this, mouse_adapter, "Dominique", Gender.MALE);
+    Profile profile = new Profile(this, player);
+    Boolean displayProfile = false;
+
+
+    // the Song class 
+    Sound sound = new Sound();
+    Sound se = new Sound();
+
+    // UI COMPONENT
+    UI ui = new UI(this);
+
+    
+    ChatBox chatbox = new ChatBox(this, player);
+ 
+
+
+
 
 
 
@@ -91,16 +115,32 @@ public class GamePanel extends JPanel implements Runnable {
 
 
 
-
+    
 
 
     public GamePanel() {
+
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
         this.setBackground(Color.BLACK);
         this.setDoubleBuffered(true);
         this.addKeyListener(key_handler);
         this.setFocusable(true);
+        // this.setLayout(null);
+        
+       
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+   
 
+      
+
+      
+
+       
 
 
 
@@ -108,6 +148,8 @@ public class GamePanel extends JPanel implements Runnable {
         // HOVER OF THE MOUSE ONTO A TILE
         this.addMouseListener(mouse_adapter);
         this.addMouseMotionListener(mouse_adapter);
+
+
         // Mouse position tracking
         addMouseListener(new MouseAdapter() {
             @Override
@@ -120,30 +162,93 @@ public class GamePanel extends JPanel implements Runnable {
                 mouseOverTileX = tilePoint.x;
                 mouseOverTileY = tilePoint.y;
 
+                if (!(e.getX() >= player.spriteX && e.getX() <= player.spriteX + player.currentSprite.getWidth() && e.getY() >= player.spriteY && e.getY() <= player.spriteY + player.currentSprite
+                .getHeight())){
 
-//                 Update hovered tile if within bounds
-                if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
-                    if (mouseOverTileX == previousTileX && mouseOverTileY == previousTileY) {
-                        // Do nothing: the player continues its current movement
-                        System.out.println("Clicked on the same tile, ignoring...");
-                    } else {
-                        hoveredTileX = mouseOverTileX;
-                        hoveredTileY = mouseOverTileY;
-                        System.out.println("mouseOverTileX = " + hoveredTileX + " mouseOverTileY = " + hoveredTileY);
-                        player.setInitialPosition(player.xCurrent, player.yCurrent);
-                        player.setFinalPosition(hoveredTileX, hoveredTileY);
-                        player.in_movement = true;
-                        player.moveStartTime = System.nanoTime();
-
-                        previousTileX = hoveredTileX;
-                        previousTileY = hoveredTileY;
-
-
-                    }
+                    //                 Update hovered tile if within bounds
+                                    if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
+                                        if (mouseOverTileX == previousTileX && mouseOverTileY == previousTileY) {
+                                            // Do nothing: the player continues its current movement
+                                            System.out.println("Clicked on the same tile, ignoring...");
+                                        } else {
+                                            hoveredTileX = mouseOverTileX;
+                                            hoveredTileY = mouseOverTileY;
+                                            System.out.println("mouseOverTileX = " + hoveredTileX + " mouseOverTileY = " + hoveredTileY);
+                                            player.setInitialPosition(player.xCurrent, player.yCurrent);
+                                            player.setFinalPosition(hoveredTileX, hoveredTileY);
+                                            player.in_movement = true;
+                                            player.moveStartTime = System.nanoTime();
+                    
+                                            previousTileX = hoveredTileX;
+                                            previousTileY = hoveredTileY;
+                    
+                    
+                                        }
+                                    }
                 }
             }
         });
+
+        
+         // Mouse Drag Listener for scrolling
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                chatbox.lastMouseY = e.getY(); // Store initial mouse position
+                chatbox.draggingMessage = chatbox.isClickOnMessage(e.getX(), e.getY());
+            }
+        });
+
+        addMouseMotionListener(new MouseMotionAdapter() {
+          
+            @Override
+            public void mouseDragged(java.awt.event.MouseEvent e) {
+                if (!chatbox.draggingMessage) return; // Only scroll if a message was clicked
+
+
+                int deltaY = e.getY() - chatbox.lastMouseY;
+                chatbox.lastMouseY = e.getY(); // Update last mouse position
+
+                chatbox.scrollY += deltaY;
+
+                int maxScrollY = 800;
+                int minScrollY = -100;
+
+                Message lastMessage = player.messages.get(player.messages.size() - 1);
+
+                // Apply the new scrollY within the bounds
+                if (chatbox.scrollY < 0){
+                    chatbox.scrollY = Math.max(chatbox.scrollY, minScrollY);
+                } else if (chatbox.scrollY > 0){
+                    chatbox.scrollY = Math.min(chatbox.scrollY,  maxScrollY);
+                }
+
+                repaint(); // Update UI
+            }
+
+        });
+
+
+
+        // here the fact to display the ui when we click on the sprite otherwie close it with a button to close ! 
+        addMouseListener(new MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent e){
+                if (e.getX() >= player.spriteX && e.getX() <= player.spriteX + player.currentSprite.getWidth() && e.getY() >= player.spriteY && e.getY() <= player.spriteY + player.currentSprite
+                .getHeight()){
+                    displayProfile = true;
+                }
+                else {
+                    displayProfile = false;
+                }
+            }
+        });
+
+
     }
+
+
+  
+
 
 
     public void startGameThread() {
@@ -152,7 +257,13 @@ public class GamePanel extends JPanel implements Runnable {
         System.out.println("Game thread started");
     }
 
+    public void setupGame(){
+        chatbox.setChatBox();
+        playSong(0);
+    }
 
+
+    @Override
     public void run() {
         double drawInterval = 1_000_000_000 / FPS;
         long lastime = System.nanoTime();
@@ -176,10 +287,6 @@ public class GamePanel extends JPanel implements Runnable {
                 repaint();
                 delta--;
                 drawCount++;
-//                System.out.println("xinitial = " + player.xInitial + " yinitial = " + player.yInitial + "    xfinal = " + player.xFinal + "    yfinal = " + player.yFinal);
-////                System.out.println("mouseovertileX = " + mouseOverTileX + " mouseovertileY = " + mouseOverTileY);
-//                System.out.println("coordinateplayerXdrawn = " + coordinate_playerX_drawn + "    coordinateplayerYdrawn = " + coordinate_playerY_drawn);
-//                System.out.println("spriteX = " + player.spriteX + " spriteY = " + player.spriteY);
             }
             if (timer >= 1_000_000_000) {
 //                System.out.println("FPS : " + drawCount);
@@ -192,13 +299,10 @@ public class GamePanel extends JPanel implements Runnable {
 //
 //
     public void update() {
-//        player.update1(player.xInitial, player.yInitial, player.xFinal, player.yFinal);
         player.update();
 
 
     }
-
-
 
 
 // Drawing logic
@@ -206,8 +310,6 @@ public class GamePanel extends JPanel implements Runnable {
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-
-
         // PAINT TILE
         tile_manager.draw(g2d);
 
@@ -221,11 +323,72 @@ public class GamePanel extends JPanel implements Runnable {
 //        System.out.println("mouseOverTileX = " + mouseOverTileX + " mouseOverTileY = " + mouseOverTileY);
 //
 
+        ui.draw(g2d);
 
-            g2d.dispose();
+    
+
+        if (displayProfile){
+            profile.draw(g2d);
+
+        }
+
+
+        // setHenderingHint is to hide the bad visual of pixels, to be smooth graphically and visually more beautiful
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        
+
+        
+        g2d.setColor(Color.GRAY);
+        g2d.drawRect(10 + 75, getHeight() - 40, 300, 30);
+        g2d.setColor(Color.WHITE);
+        g2d.fillRect(10 + 75, getHeight() - 40, 300, 30);
+        g2d.fillRoundRect(320 + 75, getHeight() - 40, 80, 30, 35, 35);
+
+        
+
+      for (Message msg : player.messages) {
+          int adjustedY = msg.y + chatbox.scrollY; // Adjust messages with scrolling
+          if (msg.y < -400) continue;
+
+          g2d.setColor(Color.WHITE);
+          g2d.fillRoundRect(10, adjustedY, msg.text.length() * 7 + 20, 30, 15, 15);
+          g2d.setColor(Color.BLACK);
+          g2d.setFont(new Font("Arial", Font.PLAIN, 14)); // Adjust size as needed
+          g2d.drawString(msg.text, 20, adjustedY + 20);
+          msg.adjustedY = adjustedY;
+      }
+
+
+
+
+
+
+        g2d.dispose();
 
 
     }
+
+
+    public void playSong(int i){
+        sound.setFile(i);
+        sound.play();
+        sound.loop();
+
+    }
+
+    public void stopSong (){
+        sound.stop();
+        
+    }
+
+    public void playSE(int i){
+        se.setFile(i);
+        se.play();
+    }
+
+
+    
 
 
 

@@ -26,6 +26,10 @@ public class Entity {
         ISO_X_LEFT,
     }
 
+    public enum Gender {
+        MALE, FEMALE;
+    }
+
     public int SpriteCounter = 0;
     public int SpriteNum = 1;
 
