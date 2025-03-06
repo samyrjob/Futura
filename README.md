@@ -1,0 +1,1 @@
+For now as the development highly depends on the integration of both the backend and the frontend parts in the Apache Tomcat server, I only join the GUI environment separately with the backend part (named settling_scores) and the frontend part (named landingpage).
