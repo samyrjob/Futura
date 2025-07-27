@@ -79,8 +79,8 @@ public class GamePanel extends JPanel implements Runnable {
     KeyHandler key_handler = new KeyHandler();
     public TileManager tile_manager = new TileManager(this);
     MyMouseAdapter mouse_adapter = new MyMouseAdapter(this);
-    public Player player = new Player(this, mouse_adapter, "Dominique", Gender.MALE);
-    Profile profile = new Profile(this, player);
+    public Player player;
+    Profile profile;
     Boolean displayProfile = false;
 
 
@@ -92,7 +92,7 @@ public class GamePanel extends JPanel implements Runnable {
     UI ui = new UI(this);
 
     
-    ChatBox chatbox = new ChatBox(this, player);
+    ChatBox chatbox;
  
 
 
@@ -118,7 +118,15 @@ public class GamePanel extends JPanel implements Runnable {
     
 
 
-    public GamePanel() {
+    public GamePanel(String username, String genderStr) {
+
+
+        Gender gender = genderStr.equalsIgnoreCase("female") ? Gender.FEMALE : Gender.MALE;
+        this.player = new Player(this, mouse_adapter, username, gender);
+
+        chatbox = new ChatBox(this, player);
+        profile = new Profile(this, player);
+
 
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
         this.setBackground(Color.BLACK);
@@ -278,11 +286,13 @@ public class GamePanel extends JPanel implements Runnable {
             timer += (currentTime - lastime);
             lastime = currentTime;
             if (delta >= 1) {
-                System.out.println("xinitial = " + player.xInitial + " yinitial = " + player.yInitial + "    xfinal = " + player.xFinal + "    yfinal = " + player.yFinal);
-                System.out.println("xmap current = " + player.xCurrent  + " ymap current " + player.yCurrent);
-//                System.out.println("mouseX = " + mouseX + " mouseY = " + mouseY);
-                System.out.println(player.direction);
-                System.out.println("spriteX = " + player.spriteX + " spriteY = " + player.spriteY);
+
+                //! to print the direction and coordinates of the sprite
+//                 System.out.println("xinitial = " + player.xInitial + " yinitial = " + player.yInitial + "    xfinal = " + player.xFinal + "    yfinal = " + player.yFinal);
+//                 System.out.println("xmap current = " + player.xCurrent  + " ymap current " + player.yCurrent);
+// //                System.out.println("mouseX = " + mouseX + " mouseY = " + mouseY);
+//                 System.out.println(player.direction);
+//                 System.out.println("spriteX = " + player.spriteX + " spriteY = " + player.spriteY);
                 update();
                 repaint();
                 delta--;

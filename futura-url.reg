@@ -1,0 +1,14 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\futura]
+@="URL:Futura Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\futura\shell]
+
+[HKEY_CLASSES_ROOT\futura\shell\open]
+
+[HKEY_CLASSES_ROOT\futura\shell\open\command]
+@="\"C:\\Program Files\\Futura_curls\\Futura_curls.exe\" \"%1\""
+
+

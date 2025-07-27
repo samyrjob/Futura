@@ -5,14 +5,48 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 
 
 public class Main {
     public static void main(String[] args) {
-        // Start the application with the login page
-        SwingUtilities.invokeLater(() -> new LoginFrame());
+
+        String username = "Dominique";
+        String gender = "male";
+        AtomicBoolean flag = new AtomicBoolean(false);
+
+        if (args.length > 0 && args[0].startsWith("futura://")) {
+            String query = args[0].substring(args[0].indexOf("?") + 1);
+            String[] pairs = query.split("&");
+            for (String pair : pairs) {
+                String[] kv = pair.split("=");
+                if (kv.length == 2) {
+                    if (kv[0].equalsIgnoreCase("user")) {
+                        username = kv[1];
+                    } else if (kv[0].equalsIgnoreCase("gender")) {
+                        gender = kv[1];
+                    }
+                }
+            }
+            flag.set(true);
+        }
+
+        String finalUsername = username;
+        String finalGender = gender;
+        System.out.println("gender is" + finalGender + "\n");
+        System.out.println("username is" + finalUsername + " \n");
+
+        SwingUtilities.invokeLater(() -> {
+            if (flag.get()) {
+                new GamePanelFrame(finalUsername, finalGender);
+            } else {
+                new LoginFrame();
+            }
+        });
     }
 }
+
 
 
 
@@ -69,7 +103,8 @@ class LoginFrame extends JFrame {
                 if (username.equals("user") && password.equals("1234")) {
                     JOptionPane.showMessageDialog(null, "Login successful!");
                     dispose(); // Close login window
-                    new GamePanelFrame(); // Open game panel
+                    //! here we can change the gender
+                    new GamePanelFrame(username, "male"); // Open game panel
                 } else {
                     JOptionPane.showMessageDialog(null, "Invalid credentials. Try again.");
                 }
@@ -85,7 +120,7 @@ class LoginFrame extends JFrame {
 
 class GamePanelFrame {
 
-    public GamePanelFrame() {
+    public GamePanelFrame(String username, String gender) {
 
         // System.setProperty("sun.java2d.uiScale", "1.0");
 
@@ -98,7 +133,7 @@ class GamePanelFrame {
 
         window.setResizable(false);
 
-        GamePanel gamepanel = new GamePanel();
+        GamePanel gamepanel = new GamePanel(username, gender);
         window.add(gamepanel);
 
         Toolkit toolkit = Toolkit.getDefaultToolkit();
