@@ -626,4 +626,15 @@ public void map_function(){
         }
     }
 
+
+
+// For opening and closing the bubble of the player in In Player.java
+public boolean contains(int mouseX, int mouseY) {
+    return mouseX >= spriteX &&
+           mouseX <= spriteX + currentSprite.getWidth() &&
+           mouseY >= spriteY &&
+           mouseY <= spriteY + currentSprite.getHeight();
+}
+
+
 }

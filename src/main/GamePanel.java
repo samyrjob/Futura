@@ -241,13 +241,9 @@ public class GamePanel extends JPanel implements Runnable {
         // here the fact to display the ui when we click on the sprite otherwie close it with a button to close ! 
         addMouseListener(new MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e){
-                if (e.getX() >= player.spriteX && e.getX() <= player.spriteX + player.currentSprite.getWidth() && e.getY() >= player.spriteY && e.getY() <= player.spriteY + player.currentSprite
-                .getHeight()){
-                    displayProfile = true;
-                }
-                else {
-                    displayProfile = false;
-                }
+                if (player.contains(e.getX(), e.getY())) {
+                    displayProfile = !displayProfile;
+}
             }
         });
 
