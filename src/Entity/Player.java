@@ -316,7 +316,7 @@ public class Player extends Entity {
                 // Interpolate the player's position
                 spriteX = (int) (playerWorldX_initial + (playerWorldX_target - playerWorldX_initial) * progress) ;
                 spriteY = (int) (playerWorldY_initial + (playerWorldY_target - playerWorldY_initial) * progress) ;
-                System.out.println("progress :  " +  progress);
+                // System.out.println("progress :  " +  progress);
 
 //    // FORMULA TILECENTERX AND TILECENTERY
 //            int tileCenterX = (mapX - mapY) * (gp.tileSizeWidth / 2) + gp.tile_manager.xOffset + (gp.tileSizeWidth / 2);

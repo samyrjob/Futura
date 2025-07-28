@@ -16,28 +16,28 @@ public class Main {
         String gender = "male";
         AtomicBoolean flag = new AtomicBoolean(false);
 
-        // if (args.length > 0 && args[0].startsWith("futura://")) {
-        //     String query = args[0].substring(args[0].indexOf("?") + 1);
-        //     String[] pairs = query.split("&");
-        //     for (String pair : pairs) {
-        //         String[] kv = pair.split("=");
-        //         if (kv.length == 2) {
-        //             if (kv[0].equalsIgnoreCase("user")) {
-        //                 username = kv[1];
-        //             } else if (kv[0].equalsIgnoreCase("gender")) {
-        //                 gender = kv[1];
-        //             }
-        //         }
-        //     }
-        //     flag.set(true);
-        // }
-
-        if (args.length > 0) {
-           
-            username = args[0];
-            gender = args[1];
+        if (args.length > 0 && args[0].startsWith("futura://")) {
+            String query = args[0].substring(args[0].indexOf("?") + 1);
+            String[] pairs = query.split("&");
+            for (String pair : pairs) {
+                String[] kv = pair.split("=");
+                if (kv.length == 2) {
+                    if (kv[0].equalsIgnoreCase("user")) {
+                        username = kv[1];
+                    } else if (kv[0].equalsIgnoreCase("gender")) {
+                        gender = kv[1];
+                    }
+                }
+            }
             flag.set(true);
         }
+
+        // if (args.length > 0) {
+           
+        //     username = args[0];
+        //     gender = args[1];
+        //     flag.set(true);
+        // }
 
         String finalUsername = username;
         String finalGender = gender;

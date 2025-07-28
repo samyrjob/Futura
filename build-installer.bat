@@ -1,10 +1,10 @@
 @echo off
 
 jpackage ^
- --name "Futura_curls" ^
+ --name "Futura_curly" ^
  --app-version "1.0" ^
- --input "out\production\Isometric2d\artifacts\Isometric2d_jar" ^
- --main-jar "Isometric2d.jar" ^
+ --input "" ^
+ --main-jar "MyApp.jar" ^
  --main-class "main.Main" ^
  --dest "installer_output" ^
  --vendor "Ankillous" ^
