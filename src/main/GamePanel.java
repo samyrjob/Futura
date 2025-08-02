@@ -121,6 +121,8 @@ public class GamePanel extends JPanel implements Runnable {
     public GamePanel(String username, String genderStr) {
 
 
+        this.setLayout(null);
+        // this.setLayout(FlowLayout);
         Gender gender = genderStr.equalsIgnoreCase("female") ? Gender.FEMALE : Gender.MALE;
         this.player = new Player(this, mouse_adapter, username, gender);
 
@@ -133,7 +135,9 @@ public class GamePanel extends JPanel implements Runnable {
         this.setDoubleBuffered(true);
         this.addKeyListener(key_handler);
         this.setFocusable(true);
-        // this.setLayout(null);
+
+        
+    
         
        
         try {
@@ -289,6 +293,9 @@ public class GamePanel extends JPanel implements Runnable {
 // //                System.out.println("mouseX = " + mouseX + " mouseY = " + mouseY);
 //                 System.out.println(player.direction);
 //                 System.out.println("spriteX = " + player.spriteX + " spriteY = " + player.spriteY);
+
+
+                System.out.println("height is :   " + this.getHeight());
                 update();
                 repaint();
                 delta--;
@@ -337,6 +344,7 @@ public class GamePanel extends JPanel implements Runnable {
             profile.draw(g2d);
 
         }
+        chatbox.draw(g2d);
 
 
         // setHenderingHint is to hide the bad visual of pixels, to be smooth graphically and visually more beautiful
@@ -345,11 +353,13 @@ public class GamePanel extends JPanel implements Runnable {
         
 
         
-        g2d.setColor(Color.GRAY);
-        g2d.drawRect(10 + 75, getHeight() - 40, 300, 30);
-        g2d.setColor(Color.WHITE);
-        g2d.fillRect(10 + 75, getHeight() - 40, 300, 30);
-        g2d.fillRoundRect(320 + 75, getHeight() - 40, 80, 30, 35, 35);
+        // g2d.setColor(Color.GRAY);
+        // g2d.drawRect(10 + 75, getHeight() - 40, 300, 30);
+        // g2d.setColor(Color.WHITE);
+        // g2d.fillRect(10 + 75, getHeight() - 40, 300, 30);
+        // g2d.fillRoundRect(320 + 75, getHeight() - 40, 80, 30, 35, 35);
+
+
 
         
 

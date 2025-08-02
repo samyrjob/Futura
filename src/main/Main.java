@@ -32,12 +32,7 @@ public class Main {
             flag.set(true);
         }
 
-        // if (args.length > 0) {
-           
-        //     username = args[0];
-        //     gender = args[1];
-        //     flag.set(true);
-        // }
+        
 
         String finalUsername = username;
         String finalGender = gender;
