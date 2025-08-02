@@ -38,7 +38,7 @@ public class ChatBox{
     
     public void setChatBox() {
 
-        gp.setLayout(null);
+        // gp.setLayout(null);
 
         // Initialize components AFTER layeredPane is added
         inputField = new JTextField(20);
@@ -46,12 +46,17 @@ public class ChatBox{
 
         gp.add(inputField);
         gp.add(sendButton);
+
+
         gp.setComponentZOrder(inputField, 0);
         gp.setComponentZOrder(sendButton, 0);
-    
+
         inputField.setBounds(10 + 75, gp.getHeight() - 40, 300, 30); 
         sendButton.setBounds(320 + 75, gp.getHeight() - 40, 80, 30);
         // Ensure inputField and sendButton are visible
+
+
+   
 
 
 
@@ -108,6 +113,36 @@ public class ChatBox{
         int startY =  gp.getHeight() - 95;
         player.messages.add(new Message(message, startY)); // Add the new message to the list
         gp.repaint();
+    }
+
+     public void draw(Graphics2D g2d){
+
+                // Simulate input text field (visual only)
+          int inputX = 85;
+          int inputY = 768 - 40;
+          int inputWidth = 300;
+          int inputHeight = 30;
+
+          g2d.setColor(Color.WHITE); // Background color
+          g2d.fillRoundRect(inputX, inputY, inputWidth, inputHeight, 10, 10);
+          g2d.setColor(Color.GRAY); // Border color
+          g2d.drawRoundRect(inputX, inputY, inputWidth, inputHeight, 10, 10);
+
+          g2d.setColor(Color.BLACK);
+          g2d.setFont(new Font("Arial", Font.PLAIN, 14));
+          g2d.drawString("Type a message...", inputX + 10, inputY + 20); // Placeholder
+
+          // Simulate send button (visual only)
+          int buttonX = inputX + inputWidth + 10;
+          int buttonWidth = 80;
+          int buttonHeight = 30;
+
+          g2d.setColor(new Color(59, 89, 152)); // Facebook-blue-style button
+          g2d.fillRoundRect(buttonX, inputY, buttonWidth, buttonHeight, 10, 10);
+          g2d.setColor(Color.WHITE);
+          g2d.setFont(new Font("Arial", Font.BOLD, 14));
+          g2d.drawString("Send", buttonX + 20, inputY + 20);
+
     }
 
 
