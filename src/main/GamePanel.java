@@ -411,6 +411,11 @@
 
 // }
 
+
+
+
+//! second draft
+
 package main;
 
 import Entity.Player;
@@ -799,3 +804,4 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
 }
+
