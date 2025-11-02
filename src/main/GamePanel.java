@@ -24,32 +24,27 @@ import java.awt.event.MouseAdapter;
 
 public class GamePanel extends JPanel implements Runnable {
 
-
     private int previousTileX = -1;
     private int previousTileY = -1;
 
     public int hoveredTileX =-1;
     public int hoveredTileY=-1;
 
-
     final int originalTileSize = 16;
     final int size = 6;
-    public final int tileSizeWidth = originalTileSize * size; // 96
-    public final int tileSizeHeight = originalTileSize * size / 2; // 48
+    public final int tileSizeWidth = originalTileSize * size;
+    public final int tileSizeHeight = originalTileSize * size / 2;
 
-    // full screen SETTINGS
     public final int maxScreenRow = 16;
     public final int maxScreenCol = 16;
-    public final int screenWidth = maxScreenCol * tileSizeWidth; // = 16*96 = 1537
-    public final int screenHeight = maxScreenRow * tileSizeHeight;  // = 8*96 = 768
+    public final int screenWidth = maxScreenCol * tileSizeWidth;
+    public final int screenHeight = maxScreenRow * tileSizeHeight;
 
-    ;    // WORLD SETTINGS :
     public final int maxWorldCol = 9;
     public final int maxWorldRow = 5;
-    public final int worldWidth = maxWorldCol * tileSizeWidth;  //  = 9*96 = 864
-    public final int worldHeight = maxWorldRow * tileSizeHeight; //  = 5 * 96 = 480
+    public final int worldWidth = maxWorldCol * tileSizeWidth;
+    public final int worldHeight = maxWorldRow * tileSizeHeight;
 
-    // HANDLE HOUSE HOVER
     HandleMouseHover handleMouseHover = new HandleMouseHover(this);
 
     public int mouseOverTileX;
@@ -68,20 +63,20 @@ public class GamePanel extends JPanel implements Runnable {
     Profile profile;
     Boolean displayProfile = false;
 
-    // the Song class 
     Sound sound = new Sound();
     Sound se = new Sound();
 
-    // UI COMPONENT
     UI ui = new UI(this);
 
     ChatBox chatbox;
     
     // MULTIPLAYER COMPONENTS
-    NetworkManager networkManager;
+    public NetworkManager networkManager;  // Made public so Main.java can access it
     private Map<String, RemotePlayer> remotePlayers;
     private boolean multiplayerEnabled = false;
-
+    
+    // Chat message scrolling
+    private Timer messageTimer;
 
     private Point calculateTileFromMouse(int mouseX, int mouseY) {
         int adjustedX = mouseX - tile_manager.xOffset;
@@ -94,7 +89,6 @@ public class GamePanel extends JPanel implements Runnable {
     public Point getCalculateTileFromMouse(int x, int y){
         return calculateTileFromMouse(x, y);
     }
-
 
     public GamePanel(String username, String genderStr) {
         this.setLayout(null);
@@ -120,15 +114,29 @@ public class GamePanel extends JPanel implements Runnable {
         remotePlayers = new HashMap<>();
         networkManager = new NetworkManager(this);
         player.setNetworkManager(networkManager);
+        
+        // Start message animation timer (moves messages up)
+        messageTimer = new Timer(1000, e -> {
+            for (Entity.Player.Message msg : player.messages) {
+                msg.y -= 20; // Move message up by 20 pixels
+            }
+            repaint();
+        });
+        messageTimer.start();
 
         // HOVER OF THE MOUSE ONTO A TILE
         this.addMouseListener(mouse_adapter);
         this.addMouseMotionListener(mouse_adapter);
 
-        // Mouse position tracking
+        // Mouse click for movement
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                //! Don't move player if chat is open
+                // if (chatbox.isChatVisible()) {
+                //     return;
+                // }
+                
                 int mouseX = e.getX();
                 int mouseY = e.getY();
 
@@ -137,72 +145,29 @@ public class GamePanel extends JPanel implements Runnable {
                 mouseOverTileX = tilePoint.x;
                 mouseOverTileY = tilePoint.y;
 
-                if (!(e.getX() >= player.spriteX && e.getX() <= player.spriteX + player.currentSprite.getWidth() && e.getY() >= player.spriteY && e.getY() <= player.spriteY + player.currentSprite
-                .getHeight())){
+                if (!(e.getX() >= player.spriteX && e.getX() <= player.spriteX + player.currentSprite.getWidth() && 
+                      e.getY() >= player.spriteY && e.getY() <= player.spriteY + player.currentSprite.getHeight())){
 
-                    //                 Update hovered tile if within bounds
-                                    if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
-                                        if (mouseOverTileX == previousTileX && mouseOverTileY == previousTileY) {
-                                            // Do nothing: the player continues its current movement
-                                            System.out.println("Clicked on the same tile, ignoring...");
-                                        } else {
-                                            hoveredTileX = mouseOverTileX;
-                                            hoveredTileY = mouseOverTileY;
-                                            System.out.println("mouseOverTileX = " + hoveredTileX + " mouseOverTileY = " + hoveredTileY);
-                                            player.setInitialPosition(player.xCurrent, player.yCurrent);
-                                            player.setFinalPosition(hoveredTileX, hoveredTileY);
-                                            player.in_movement = true;
-                                            player.moveStartTime = System.nanoTime();
+                    if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
+                        if (mouseOverTileX == previousTileX && mouseOverTileY == previousTileY) {
+                            System.out.println("Clicked on the same tile, ignoring...");
+                        } else {
+                            hoveredTileX = mouseOverTileX;
+                            hoveredTileY = mouseOverTileY;
+                            System.out.println("Moving to tile: " + hoveredTileX + ", " + hoveredTileY);
+                            
+                            // Use pathfinding to move (Habbo-style)
+                            player.moveTo(hoveredTileX, hoveredTileY);
                     
-                                            previousTileX = hoveredTileX;
-                                            previousTileY = hoveredTileY;
-                    
-                    
-                                        }
-                                    }
+                            previousTileX = hoveredTileX;
+                            previousTileY = hoveredTileY;
+                        }
+                    }
                 }
             }
         });
 
-        
-         // Mouse Drag Listener for scrolling
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e) {
-                chatbox.lastMouseY = e.getY(); // Store initial mouse position
-                chatbox.draggingMessage = chatbox.isClickOnMessage(e.getX(), e.getY());
-            }
-        });
-
-        addMouseMotionListener(new MouseMotionAdapter() {
-          
-            @Override
-            public void mouseDragged(java.awt.event.MouseEvent e) {
-                if (!chatbox.draggingMessage) return; // Only scroll if a message was clicked
-
-                int deltaY = e.getY() - chatbox.lastMouseY;
-                chatbox.lastMouseY = e.getY(); // Update last mouse position
-
-                chatbox.scrollY += deltaY;
-
-                int maxScrollY = 800;
-                int minScrollY = -100;
-
-                Message lastMessage = player.messages.get(player.messages.size() - 1);
-
-                // Apply the new scrollY within the bounds
-                if (chatbox.scrollY < 0){
-                    chatbox.scrollY = Math.max(chatbox.scrollY, minScrollY);
-                } else if (chatbox.scrollY > 0){
-                    chatbox.scrollY = Math.min(chatbox.scrollY,  maxScrollY);
-                }
-
-                repaint(); // Update UI
-            }
-
-        });
-
-        // here the fact to display the ui when we click on the sprite otherwie close it with a button to close ! 
+        // Profile display on sprite click
         addMouseListener(new MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e){
                 if (player.contains(e.getX(), e.getY())) {
@@ -212,7 +177,6 @@ public class GamePanel extends JPanel implements Runnable {
         });
     }
 
-
     public void startGameThread() {
         gameThread = new Thread(this);
         gameThread.start();
@@ -220,7 +184,6 @@ public class GamePanel extends JPanel implements Runnable {
     }
 
     public void setupGame(){
-        chatbox.setChatBox();
         playSong(0);
         
         // Connect to multiplayer server
@@ -230,7 +193,6 @@ public class GamePanel extends JPanel implements Runnable {
     private void connectToServer() {
         if (networkManager.connect()) {
             multiplayerEnabled = true;
-            // Send join message
             networkManager.sendJoinMessage(
                 player.name,
                 player.gender.toString(),
@@ -267,11 +229,16 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     public synchronized void addRemotePlayerChat(String username, String text) {
-        // For now, just add to local player's messages
-        // You could enhance this to show who sent the message
-        player.messages.add(new Message(username + ": " + text, getHeight() - 95));
+        // Add chat message from remote player (will float up on screen)
+        player.messages.add(new Entity.Player.Message(username + ": " + text, getHeight() - 95));
+        repaint();
     }
-
+    
+    public void sendChatToNetwork(String text) {
+        if (networkManager != null && networkManager.isConnected()) {
+            networkManager.sendChatMessage(text);
+        }
+    }
 
     @Override
     public void run() {
@@ -288,8 +255,6 @@ public class GamePanel extends JPanel implements Runnable {
             timer += (currentTime - lastime);
             lastime = currentTime;
             if (delta >= 1) {
-
-                System.out.println("height is :   " + this.getHeight());
                 update();
                 repaint();
                 delta--;
@@ -299,7 +264,6 @@ public class GamePanel extends JPanel implements Runnable {
                 drawCount = 0;
                 timer = 0;
             }
-
         }
     }
 
@@ -314,8 +278,6 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
 
-
-// Drawing logic
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -342,27 +304,24 @@ public class GamePanel extends JPanel implements Runnable {
         if (displayProfile){
             profile.draw(g2d);
         }
-        
-        chatbox.draw(g2d);
 
-        // setHenderingHint is to hide the bad visual of pixels, to be smooth graphically and visually more beautiful
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        for (Message msg : player.messages) {
-            int adjustedY = msg.y + chatbox.scrollY; // Adjust messages with scrolling
-            if (msg.y < -400) continue;
-
+        // DRAW CHAT MESSAGES (floating up from bottom)
+        for (Entity.Player.Message msg : player.messages) {
+            // Skip messages that have scrolled too far up
+            if (msg.y < -50) continue;
+            
             g2d.setColor(Color.WHITE);
-            g2d.fillRoundRect(10, adjustedY, msg.text.length() * 7 + 20, 30, 15, 15);
+            g2d.fillRoundRect(10, msg.y, msg.text.length() * 7 + 20, 30, 15, 15);
             g2d.setColor(Color.BLACK);
-            g2d.setFont(new Font("Arial", Font.PLAIN, 14)); // Adjust size as needed
-            g2d.drawString(msg.text, 20, adjustedY + 20);
-            msg.adjustedY = adjustedY;
+            g2d.setFont(new Font("Arial", Font.PLAIN, 14));
+            g2d.drawString(msg.text, 20, msg.y + 20);
         }
+
+        // Rendering hints
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         g2d.dispose();
     }
-
 
     public void playSong(int i){
         sound.setFile(i);
@@ -386,4 +345,3 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
 }
-
