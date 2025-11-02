@@ -292,50 +292,130 @@ class LoginFrame extends JFrame {
 
 
 
-class GamePanelFrame {
+// class GamePanelFrame {
 
-    private GamePanel gamepanel;
+//     private GamePanel gamepanel;
 
-    public GamePanelFrame(String username, String gender) {
+//     public GamePanelFrame(String username, String gender) {
 
-        JFrame window = new JFrame();
+//         JFrame window = new JFrame();
 
-        window.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        window.setResizable(false);
+//         window.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+//         window.setResizable(false);
 
-        gamepanel = new GamePanel(username, gender);
-        window.add(gamepanel);
+//         gamepanel = new GamePanel(username, gender);
+//         window.add(gamepanel);
 
-        Toolkit toolkit = Toolkit.getDefaultToolkit();
-        Dimension screenSize = toolkit.getScreenSize();
+//         Toolkit toolkit = Toolkit.getDefaultToolkit();
+//         Dimension screenSize = toolkit.getScreenSize();
 
-        // Ensure the frame fits within the screen dimensions
-        window.setSize(Math.min(gamepanel.screenWidth, screenSize.width), Math.min(gamepanel.screenHeight, screenSize.height));
+//         // Ensure the frame fits within the screen dimensions
+//         window.setSize(Math.min(gamepanel.screenWidth, screenSize.width), Math.min(gamepanel.screenHeight, screenSize.height));
 
-        window.pack();
+//         window.pack();
 
-        window.setTitle("2D Adventure - Multiplayer");
-        window.setLocationRelativeTo(null);
+//         window.setTitle("2D Adventure - Multiplayer");
+//         window.setLocationRelativeTo(null);
         
-        // Add window listener to handle cleanup on close
-        window.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                // Cleanup network connections
-                gamepanel.cleanup();
+//         // Add window listener to handle cleanup on close
+//         window.addWindowListener(new WindowAdapter() {
+//             @Override
+//             public void windowClosing(WindowEvent e) {
+//                 // Cleanup network connections
+//                 gamepanel.cleanup();
                 
-                // Close the window
-                window.dispose();
-                System.exit(0);
-            }
-        });
+//                 // Close the window
+//                 window.dispose();
+//                 System.exit(0);
+//             }
+//         });
         
-        window.setVisible(true);
+//         window.setVisible(true);
 
-        gamepanel.startGameThread();
-        gamepanel.setupGame();
+//         gamepanel.startGameThread();
+//         gamepanel.setupGame();
+//     }
+// }
+
+    class GamePanelFrame {
+
+        private GamePanel gamepanel;
+        private JTextField messageField;
+        private JButton sendButton;
+
+        public GamePanelFrame(String username, String gender) {
+
+            JFrame window = new JFrame("2D Adventure - Multiplayer");
+            window.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+            window.setResizable(false);
+            window.setLayout(new BorderLayout());
+
+            // --- Main Game Area ---
+            gamepanel = new GamePanel(username, gender);
+            window.add(gamepanel, BorderLayout.CENTER);
+
+            // --- Chat Input Panel ---
+            JPanel chatInputPanel = new JPanel(new BorderLayout());
+            chatInputPanel.setBackground(new Color(40, 40, 40));
+            chatInputPanel.setPreferredSize(new Dimension(gamepanel.screenWidth, 40));
+            chatInputPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+            messageField = new JTextField();
+            sendButton = new JButton("Send");
+
+            chatInputPanel.add(messageField, BorderLayout.CENTER);
+            chatInputPanel.add(sendButton, BorderLayout.EAST);
+
+            // Add chat input panel at bottom
+            window.add(chatInputPanel, BorderLayout.SOUTH);
+
+            // --- Frame Setup ---
+            Toolkit toolkit = Toolkit.getDefaultToolkit();
+            Dimension screenSize = toolkit.getScreenSize();
+            window.setSize(
+                Math.min(gamepanel.screenWidth, screenSize.width),
+                Math.min(gamepanel.screenHeight + 60, screenSize.height)
+            );
+            window.setLocationRelativeTo(null);
+
+            // --- Send message logic ---
+            sendButton.addActionListener(e -> sendChatMessage());
+            messageField.addActionListener(e -> sendChatMessage()); // allow Enter key
+
+            // --- Handle close event ---
+            window.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    gamepanel.cleanup();
+                    window.dispose();
+                    System.exit(0);
+                }
+            });
+
+            window.setVisible(true);
+            gamepanel.startGameThread();
+            gamepanel.setupGame();
+        }
+
+        private void sendChatMessage() {
+            String text = messageField.getText().trim();
+            if (text.isEmpty()) return;
+
+            // Add message to player messages
+            gamepanel.player.messages.add(
+                new Entity.Player.Message(gamepanel.player.name + ": " + text, gamepanel.getHeight() - 95)
+            );
+
+            // Send message to other players if multiplayer enabled
+            if (gamepanel.networkManager != null) {
+                gamepanel.networkManager.sendChatMessage(text);
+            }
+
+            messageField.setText("");
+            gamepanel.repaint();
+        }
     }
-}
+
 
 
 class OpenRegistrationSite {
