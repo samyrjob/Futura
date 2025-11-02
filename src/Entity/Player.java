@@ -319,6 +319,26 @@ public class Player extends Entity {
                mouseY <= spriteY + currentSprite.getHeight();
     }
 
+    //! For opening and closing the bubble of the player in In Player.java
+    // public boolean contains(int mouseX, int mouseY) {
+    //     // Use actual drawn size with smaller, precise hitbox
+    //     int drawnWidth = 2 * gp.tileSizeWidth;   // 192 pixels
+    //     int drawnHeight = 4 * gp.tileSizeHeight; // 192 pixels
+        
+    //     // Smaller hitbox - only character body (40% width, 50% height)
+    //     int hitboxWidth = (int)(drawnWidth * 0.4);
+    //     int hitboxHeight = (int)(drawnHeight * 0.5);
+        
+    //     // Center horizontally, position at bottom
+    //     int hitboxX = spriteX + (drawnWidth - hitboxWidth) / 2;
+    //     int hitboxY = spriteY + drawnHeight - hitboxHeight;
+        
+    //     return mouseX >= hitboxX &&
+    //         mouseX <= hitboxX + hitboxWidth &&
+    //         mouseY >= hitboxY &&
+    //         mouseY <= hitboxY + hitboxHeight;
+    // }
+
     // Message class
     public static class Message {
         public String text;

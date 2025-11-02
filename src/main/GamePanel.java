@@ -128,15 +128,48 @@ public class GamePanel extends JPanel implements Runnable {
         this.addMouseListener(mouse_adapter);
         this.addMouseMotionListener(mouse_adapter);
 
-        // Mouse click for movement
+        //! Mouse click for movement
+        // addMouseListener(new MouseAdapter() {
+        //     @Override
+        //     public void mouseClicked(MouseEvent e) {
+        //         //! Don't move player if chat is open
+        //         // if (chatbox.isChatVisible()) {
+        //         //     return;
+        //         // }
+                
+        //         int mouseX = e.getX();
+        //         int mouseY = e.getY();
+
+        //         Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
+
+        //         mouseOverTileX = tilePoint.x;
+        //         mouseOverTileY = tilePoint.y;
+
+        //         if (!(e.getX() >= player.spriteX && e.getX() <= player.spriteX + player.currentSprite.getWidth() && 
+        //               e.getY() >= player.spriteY && e.getY() <= player.spriteY + player.currentSprite.getHeight())){
+
+        //             if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
+        //                 if (mouseOverTileX == previousTileX && mouseOverTileY == previousTileY) {
+        //                     System.out.println("Clicked on the same tile, ignoring...");
+        //                 } else {
+        //                     hoveredTileX = mouseOverTileX;
+        //                     hoveredTileY = mouseOverTileY;
+        //                     System.out.println("Moving to tile: " + hoveredTileX + ", " + hoveredTileY);
+                            
+        //                     // Use pathfinding to move (Habbo-style)
+        //                     player.moveTo(hoveredTileX, hoveredTileY);
+                    
+        //                     previousTileX = hoveredTileX;
+        //                     previousTileY = hoveredTileY;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // });
+        // Mouse position tracking - FIXED VERSION
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                //! Don't move player if chat is open
-                // if (chatbox.isChatVisible()) {
-                //     return;
-                // }
-                
                 int mouseX = e.getX();
                 int mouseY = e.getY();
 
@@ -145,10 +178,29 @@ public class GamePanel extends JPanel implements Runnable {
                 mouseOverTileX = tilePoint.x;
                 mouseOverTileY = tilePoint.y;
 
-                if (!(e.getX() >= player.spriteX && e.getX() <= player.spriteX + player.currentSprite.getWidth() && 
-                      e.getY() >= player.spriteY && e.getY() <= player.spriteY + player.currentSprite.getHeight())){
+                // FIXED: Use smaller, precise hitbox instead of full image size
+                int drawnWidth = 2 * tileSizeWidth;   // 192 pixels
+                int drawnHeight = 4 * tileSizeHeight; // 192 pixels
+                
+                // Make hitbox smaller (only character body)
+                int hitboxWidth = (int)(drawnWidth * 0.4);   // 40% width
+                int hitboxHeight = (int)(drawnHeight * 0.5); // 50% height
+                
+                // Center horizontally, position at bottom
+                int hitboxX = player.spriteX + (drawnWidth - hitboxWidth) / 2;
+                int hitboxY = player.spriteY + drawnHeight - hitboxHeight;
+                
+                // Check if click is NOT on sprite
+                boolean clickedOnSprite = (mouseX >= hitboxX && 
+                                          mouseX <= hitboxX + hitboxWidth &&
+                                          mouseY >= hitboxY && 
+                                          mouseY <= hitboxY + hitboxHeight);
 
-                    if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
+                if (!clickedOnSprite) {
+                    // Click was on a tile, not on sprite - MOVE!
+                    if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && 
+                        mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
+                        
                         if (mouseOverTileX == previousTileX && mouseOverTileY == previousTileY) {
                             System.out.println("Clicked on the same tile, ignoring...");
                         } else {
@@ -156,7 +208,7 @@ public class GamePanel extends JPanel implements Runnable {
                             hoveredTileY = mouseOverTileY;
                             System.out.println("Moving to tile: " + hoveredTileX + ", " + hoveredTileY);
                             
-                            // Use pathfinding to move (Habbo-style)
+                            // Use pathfinding to move (if you have it)
                             player.moveTo(hoveredTileX, hoveredTileY);
                     
                             previousTileX = hoveredTileX;
