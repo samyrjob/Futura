@@ -292,51 +292,6 @@ class LoginFrame extends JFrame {
 
 
 
-// class GamePanelFrame {
-
-//     private GamePanel gamepanel;
-
-//     public GamePanelFrame(String username, String gender) {
-
-//         JFrame window = new JFrame();
-
-//         window.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-//         window.setResizable(false);
-
-//         gamepanel = new GamePanel(username, gender);
-//         window.add(gamepanel);
-
-//         Toolkit toolkit = Toolkit.getDefaultToolkit();
-//         Dimension screenSize = toolkit.getScreenSize();
-
-//         // Ensure the frame fits within the screen dimensions
-//         window.setSize(Math.min(gamepanel.screenWidth, screenSize.width), Math.min(gamepanel.screenHeight, screenSize.height));
-
-//         window.pack();
-
-//         window.setTitle("2D Adventure - Multiplayer");
-//         window.setLocationRelativeTo(null);
-        
-//         // Add window listener to handle cleanup on close
-//         window.addWindowListener(new WindowAdapter() {
-//             @Override
-//             public void windowClosing(WindowEvent e) {
-//                 // Cleanup network connections
-//                 gamepanel.cleanup();
-                
-//                 // Close the window
-//                 window.dispose();
-//                 System.exit(0);
-//             }
-//         });
-        
-//         window.setVisible(true);
-
-//         gamepanel.startGameThread();
-//         gamepanel.setupGame();
-//     }
-// }
-
     class GamePanelFrame {
 
         private GamePanel gamepanel;
@@ -354,17 +309,82 @@ class LoginFrame extends JFrame {
             gamepanel = new GamePanel(username, gender);
             window.add(gamepanel, BorderLayout.CENTER);
 
+
             // --- Chat Input Panel ---
-            JPanel chatInputPanel = new JPanel(new BorderLayout());
+            JPanel chatInputPanel = new JPanel();
             chatInputPanel.setBackground(new Color(40, 40, 40));
-            chatInputPanel.setPreferredSize(new Dimension(gamepanel.screenWidth, 40));
-            chatInputPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+            chatInputPanel.setPreferredSize(new Dimension(gamepanel.screenWidth, 60));
+            chatInputPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+            chatInputPanel.setLayout(new GridBagLayout()); // to center the inner panel
 
+            // Inner panel to hold field + button
+            JPanel innerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+            innerPanel.setOpaque(false); // transparent
+
+            // Input field
             messageField = new JTextField();
-            sendButton = new JButton("Send");
+            messageField.setPreferredSize(new Dimension(300, 35));
+            messageField.setBackground(Color.WHITE);
+            messageField.setForeground(Color.BLACK);
+            messageField.setCaretColor(Color.BLACK);
+            messageField.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2, true)); // rounded black border
 
-            chatInputPanel.add(messageField, BorderLayout.CENTER);
-            chatInputPanel.add(sendButton, BorderLayout.EAST);
+            // Placeholder setup
+            String placeholderText = "type here to write a message";
+            messageField.setForeground(Color.GRAY);
+            messageField.setFont(messageField.getFont().deriveFont(Font.ITALIC));
+            messageField.setText(placeholderText);
+
+            // Add focus listener for placeholder behavior
+            messageField.addFocusListener(new java.awt.event.FocusAdapter() {
+                @Override
+                public void focusGained(java.awt.event.FocusEvent e) {
+                    if (messageField.getText().equals(placeholderText)) {
+                        messageField.setText("");
+                        messageField.setForeground(Color.BLACK);
+                        messageField.setFont(messageField.getFont().deriveFont(Font.PLAIN));
+                    }
+                }
+
+                @Override
+                public void focusLost(java.awt.event.FocusEvent e) {
+                    if (messageField.getText().isEmpty()) {
+                        messageField.setForeground(Color.GRAY);
+                        messageField.setFont(messageField.getFont().deriveFont(Font.ITALIC));
+                        messageField.setText(placeholderText);
+                    }
+                }
+            });
+
+            // Send button
+            sendButton = new JButton("SEND");
+            sendButton.setPreferredSize(new Dimension(80, 35));
+            sendButton.setBackground(Color.WHITE);
+            sendButton.setForeground(Color.BLACK);
+            sendButton.setFont(new Font("Arial", Font.BOLD, 13));
+            sendButton.setFocusPainted(false);
+            sendButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            sendButton.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2, true)); // same rounded black border
+
+            // Hover effect (optional subtle feedback)
+            sendButton.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseEntered(java.awt.event.MouseEvent e) {
+                    sendButton.setBackground(new Color(230, 230, 230));
+                }
+                @Override
+                public void mouseExited(java.awt.event.MouseEvent e) {
+                    sendButton.setBackground(Color.WHITE);
+                }
+            });
+
+            // Add to inner panel
+            innerPanel.add(messageField);
+            innerPanel.add(sendButton);
+
+            // Center in parent panel
+            chatInputPanel.add(innerPanel, new GridBagConstraints());
+
 
             // Add chat input panel at bottom
             window.add(chatInputPanel, BorderLayout.SOUTH);
@@ -398,8 +418,10 @@ class LoginFrame extends JFrame {
         }
 
         private void sendChatMessage() {
+
             String text = messageField.getText().trim();
-            if (text.isEmpty()) return;
+                if (text.isEmpty() || text.equals("type here to write a message")) return;
+
 
             // Add message to player messages
             gamepanel.player.messages.add(
