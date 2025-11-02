@@ -39,6 +39,12 @@ public class ChatBox{
     public void setChatBox() {
 
 
+   
+
+
+
+
+
         timer = new Timer(1000, e -> {
             for (Message msg : player.messages) {
                 msg.y -= 20; // Move message up by 20 pixels
@@ -80,5 +86,11 @@ public class ChatBox{
 
     }
 
+
+
+
+
+
+  
 }
 
