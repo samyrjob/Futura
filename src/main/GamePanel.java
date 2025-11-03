@@ -445,6 +445,7 @@ public class GamePanel extends JPanel implements Runnable {
             FontMetrics fm = g2d.getFontMetrics();
             int textWidth = fm.stringWidth(displayText);
             int bubbleWidth = textWidth + 50; // 40px for padding, max 450px
+            
             int bubbleHeight = 35;
             
             // Position bubble
