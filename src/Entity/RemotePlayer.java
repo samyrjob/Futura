@@ -24,6 +24,9 @@ public class RemotePlayer extends Entity {
     // Player info
     public String name;
     public Gender gender;
+
+    // ✨ ADD THIS - Message list for this remote player
+    public java.util.List<Message> messages = new java.util.ArrayList<>();
     
     public RemotePlayer(GamePanel gp, String name, Gender gender, int mapX, int mapY, String directionStr) {
         this.gp = gp;
@@ -200,6 +203,19 @@ public class RemotePlayer extends Entity {
             FontMetrics fm = g2d.getFontMetrics();
             int nameWidth = fm.stringWidth(name);
             g2d.drawString(name, spriteX + gp.tileSizeWidth - (nameWidth / 2), spriteY - 5);
+        }
+    }
+
+
+      // ✨ ADD THIS - Message class for remote player
+    public static class Message {
+        public String text;
+        public int y;
+        public int adjustedY;
+
+        public Message(String text, int y) {
+            this.text = text;
+            this.y = y;
         }
     }
 }

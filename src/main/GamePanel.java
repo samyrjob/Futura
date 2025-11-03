@@ -117,22 +117,35 @@ public class GamePanel extends JPanel implements Runnable {
         player.setNetworkManager(networkManager);
         
         //! Start message animation timer (moves messages up)
-        // messageTimer = new Timer(1000, e -> {
+      
+
+
+        // messageTimer = new Timer(50, e -> {  // Update every 50ms (smooth!)
         //     for (Entity.Player.Message msg : player.messages) {
-        //         msg.y -= 20; // Move message up by 20 pixels
+        //         //! to change the speed of the bubble
+        //         msg.y -= 1; // Move up 2 pixels per frame (smooth)
         //     }
+        //     // Remove messages that went off screen
+        //     player.messages.removeIf(m -> m.y < -100);
         //     repaint();
         // });
-        // messageTimer.start();
-
-
-        messageTimer = new Timer(50, e -> {  // Update every 50ms (smooth!)
+        messageTimer = new Timer(100, e -> {
+            // Move local player messages
             for (Entity.Player.Message msg : player.messages) {
-                //! to change the speed of the bubble
-                msg.y -= 1; // Move up 2 pixels per frame (smooth)
+                msg.y -= 1;
             }
-            // Remove messages that went off screen
             player.messages.removeIf(m -> m.y < -100);
+            
+            // ✨ NEW: Move remote players' messages too!
+            synchronized (remotePlayers) {
+                for (RemotePlayer rp : remotePlayers.values()) {
+                    for (RemotePlayer.Message msg : rp.messages) {
+                        msg.y -= 1;
+                    }
+                    rp.messages.removeIf(m -> m.y < -100);
+                }
+            }
+            
             repaint();
         });
         messageTimer.start();
@@ -257,9 +270,21 @@ public class GamePanel extends JPanel implements Runnable {
         System.out.println("Removed remote player: " + username);
     }
     
+    //! some changes
+    // public synchronized void addRemotePlayerChat(String username, String text) {
+    //     // Add chat message from remote player (will float up on screen)
+    //     player.messages.add(new Entity.Player.Message(username + ": " + text, getHeight() - 95));
+    //     repaint();
+    // }
+
     public synchronized void addRemotePlayerChat(String username, String text) {
-        // Add chat message from remote player (will float up on screen)
-        player.messages.add(new Entity.Player.Message(username + ": " + text, getHeight() - 95));
+        // Find the remote player and add message to THEIR list
+        RemotePlayer remotePlayer = remotePlayers.get(username);
+        if (remotePlayer != null) {
+            // Start bubble at THEIR sprite head (not bottom of screen!)
+            int bubbleStartY = remotePlayer.spriteY + 50;
+            remotePlayer.messages.add(new RemotePlayer.Message(username + ": " + text, bubbleStartY));
+        }
         repaint();
     }
     
@@ -325,6 +350,67 @@ public class GamePanel extends JPanel implements Runnable {
         synchronized (remotePlayers) {
             for (RemotePlayer remotePlayer : remotePlayers.values()) {
                 remotePlayer.draw(g2d);
+            }
+        }
+        // ✨ NEW: DRAW REMOTE PLAYERS' CHAT BUBBLES
+        synchronized (remotePlayers) {
+            for (RemotePlayer remotePlayer : remotePlayers.values()) {
+                for (RemotePlayer.Message msg : remotePlayer.messages) {
+                    if (msg.y < -50) continue;
+                    
+                    // Calculate bubble size
+                    int bubbleWidth = Math.min(msg.text.length() * 8 + 30, 300);
+                    int bubbleHeight = 35;
+                    
+                    // Position bubble to the RIGHT of THIS remote player's sprite
+                    int bubbleX = remotePlayer.spriteX + (2 * tileSizeWidth) - 30;
+                    int bubbleY = msg.y;
+                    
+                    // Draw white bubble
+                    g2d.setColor(Color.WHITE);
+                    g2d.fillRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
+                    
+                    // Draw border
+                    g2d.setColor(Color.BLACK);
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.drawRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
+                    
+                    // Draw text with styled name
+                    g2d.setFont(new Font("Arial", Font.BOLD, 14));
+                    String displayText = msg.text;
+                    if (displayText.length() > 35) {
+                        displayText = displayText.substring(0, 32) + "...";
+                    }
+                    
+                    // Split name and message
+                    int colonIndex = displayText.indexOf(":");
+                    if (colonIndex > 0) {
+                        String namePart = displayText.substring(0, colonIndex + 1);
+                        String messagePart = displayText.substring(colonIndex + 1);
+                        
+                        // Draw name in blue
+                        g2d.setColor(new Color(0, 102, 204));
+                        g2d.drawString(namePart, bubbleX + 15, bubbleY + 22);
+                        
+                        int nameWidth = g2d.getFontMetrics().stringWidth(namePart);
+                        
+                        // Draw message in black
+                        g2d.setColor(Color.BLACK);
+                        g2d.drawString(messagePart, bubbleX + 15 + nameWidth, bubbleY + 22);
+                    } else {
+                        g2d.setColor(Color.BLACK);
+                        g2d.drawString(displayText, bubbleX + 15, bubbleY + 22);
+                    }
+                    
+                    // Draw pointer triangle
+                    int[] xPoints = {bubbleX, bubbleX - 10, bubbleX};
+                    int[] yPoints = {bubbleY + 10, bubbleY + 17, bubbleY + 24};
+                    g2d.setColor(Color.WHITE);
+                    g2d.fillPolygon(xPoints, yPoints, 3);
+                    g2d.setColor(Color.BLACK);
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.drawPolyline(xPoints, yPoints, 3);
+                }
             }
         }
 
