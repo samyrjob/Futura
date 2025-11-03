@@ -353,48 +353,52 @@ public class GamePanel extends JPanel implements Runnable {
             }
         }
         // ✨ NEW: DRAW REMOTE PLAYERS' CHAT BUBBLES
+        //! DRAW REMOTE PLAYERS' CHAT BUBBLES (ONE LINE ONLY!)
         synchronized (remotePlayers) {
             for (RemotePlayer remotePlayer : remotePlayers.values()) {
                 for (RemotePlayer.Message msg : remotePlayer.messages) {
                     if (msg.y < -50) continue;
                     
-                    // Calculate bubble size
-                    int bubbleWidth = Math.min(msg.text.length() * 8 + 30, 300);
+                    String displayText = msg.text;
+                    
+                    // ✨ LIMIT: Max 200 characters
+                    if (displayText.length() > 200) {
+                        displayText = displayText.substring(0, 200);
+                    }
+                    
+                    //! bubble width to change after
+                    // int bubbleWidth = Math.max(displayText.length() * 10 + 40, 900);
+                    // REPLACE THIS (for both local and remote players):
+                    // int bubbleWidth = Math.min(displayText.length() * 8 + 30, 420);
+
+                    // WITH THIS:
+                    FontMetrics fm = g2d.getFontMetrics();
+                    int textWidth = fm.stringWidth(displayText);
+                    int bubbleWidth = textWidth + 50; // 40px for padding, max 450px
                     int bubbleHeight = 35;
                     
-                    // Position bubble to the RIGHT of THIS remote player's sprite
                     int bubbleX = remotePlayer.spriteX + (2 * tileSizeWidth) - 30;
                     int bubbleY = msg.y;
                     
-                    // Draw white bubble
                     g2d.setColor(Color.WHITE);
                     g2d.fillRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
                     
-                    // Draw border
                     g2d.setColor(Color.BLACK);
                     g2d.setStroke(new BasicStroke(2));
                     g2d.drawRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
                     
-                    // Draw text with styled name
                     g2d.setFont(new Font("Arial", Font.BOLD, 14));
-                    String displayText = msg.text;
-                    if (displayText.length() > 35) {
-                        displayText = displayText.substring(0, 32) + "...";
-                    }
                     
-                    // Split name and message
                     int colonIndex = displayText.indexOf(":");
                     if (colonIndex > 0) {
                         String namePart = displayText.substring(0, colonIndex + 1);
                         String messagePart = displayText.substring(colonIndex + 1);
                         
-                        // Draw name in blue
                         g2d.setColor(new Color(0, 102, 204));
                         g2d.drawString(namePart, bubbleX + 15, bubbleY + 22);
                         
                         int nameWidth = g2d.getFontMetrics().stringWidth(namePart);
                         
-                        // Draw message in black
                         g2d.setColor(Color.BLACK);
                         g2d.drawString(messagePart, bubbleX + 15 + nameWidth, bubbleY + 22);
                     } else {
@@ -402,7 +406,6 @@ public class GamePanel extends JPanel implements Runnable {
                         g2d.drawString(displayText, bubbleX + 15, bubbleY + 22);
                     }
                     
-                    // Draw pointer triangle
                     int[] xPoints = {bubbleX, bubbleX - 10, bubbleX};
                     int[] yPoints = {bubbleY + 10, bubbleY + 17, bubbleY + 24};
                     g2d.setColor(Color.WHITE);
@@ -422,62 +425,64 @@ public class GamePanel extends JPanel implements Runnable {
 
         //! DRAW CHAT MESSAGES (floating up from bottom)
        
+       // DRAW CHAT MESSAGES (Habbo Hotel style - ONE LINE ONLY!)
         for (Entity.Player.Message msg : player.messages) {
-            // Skip messages that scrolled off screen
             if (msg.y < -50) continue;
             
-            // Calculate bubble size based on text length
-            int bubbleWidth = Math.min(msg.text.length() * 8 + 30, 300); // Max width 300
+            String displayText = msg.text;
+            
+            // ✨ LIMIT: Max 200 characters (like Habbo!)
+            if (displayText.length() > 200) {
+                displayText = displayText.substring(0, 200);
+            }
+            
+            //! Calculate bubble size
+            // int bubbleWidth = Math.min(displayText.length() * 8 + 30, 420);
+            // REPLACE THIS (for both local and remote players):
+            // int bubbleWidth = Math.min(displayText.length() * 8 + 30, 420);
+
+            // WITH THIS:
+            FontMetrics fm = g2d.getFontMetrics();
+            int textWidth = fm.stringWidth(displayText);
+            int bubbleWidth = textWidth + 50; // 40px for padding, max 450px
             int bubbleHeight = 35;
             
-            // Position bubble to the RIGHT of sprite
-            int bubbleX = player.spriteX + (2 * tileSizeWidth) - 40;
+            // Position bubble
+            int bubbleX = player.spriteX + (2 * tileSizeWidth) - 30;
             int bubbleY = msg.y;
             
-            // Draw white bubble with rounded corners
+            // Draw white bubble
             g2d.setColor(Color.WHITE);
             g2d.fillRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
             
-            // Draw black border
+            // Draw border
             g2d.setColor(Color.BLACK);
             g2d.setStroke(new BasicStroke(2));
             g2d.drawRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
             
-          
-            //! Draw text with styled name
+            // Draw text with styled name (ONE LINE!)
             g2d.setFont(new Font("Arial", Font.BOLD, 14));
-
-            String displayText = msg.text;
-            if (displayText.length() > 35) {
-                displayText = displayText.substring(0, 32) + "...";
-            }
-
-            // Split name and message
+            
             int colonIndex = displayText.indexOf(":");
             if (colonIndex > 0) {
-                // Extract name and message parts
-                String namePart = displayText.substring(0, colonIndex + 1); // "Joe:"
-                String messagePart = displayText.substring(colonIndex + 1); // " Hello!"
+                String namePart = displayText.substring(0, colonIndex + 1);
+                String messagePart = displayText.substring(colonIndex + 1);
                 
-                // Draw NAME with special style
-                g2d.setColor(new Color(0, 102, 204)); // Blue color for name
+                // Draw name in blue
+                g2d.setColor(new Color(0, 102, 204));
                 g2d.drawString(namePart, bubbleX + 15, bubbleY + 22);
                 
-                // Calculate width of name to position message next to it
                 int nameWidth = g2d.getFontMetrics().stringWidth(namePart);
                 
-                // Draw MESSAGE in regular black
+                // Draw message in black
                 g2d.setColor(Color.BLACK);
                 g2d.drawString(messagePart, bubbleX + 15 + nameWidth, bubbleY + 22);
             } else {
-                // No colon found, draw entire text normally
                 g2d.setColor(Color.BLACK);
                 g2d.drawString(displayText, bubbleX + 15, bubbleY + 22);
             }
-
             
-            
-            // Draw pointer triangle (pointing LEFT to sprite)
+            // Draw pointer triangle
             int[] xPoints = {bubbleX, bubbleX - 10, bubbleX};
             int[] yPoints = {bubbleY + 10, bubbleY + 17, bubbleY + 24};
             g2d.setColor(Color.WHITE);
