@@ -335,16 +335,7 @@ public class GamePanel extends JPanel implements Runnable {
         }
 
         //! DRAW CHAT MESSAGES (floating up from bottom)
-        // for (Entity.Player.Message msg : player.messages) {
-        //     // Skip messages that have scrolled too far up
-        //     if (msg.y < -50) continue;
-            
-        //     g2d.setColor(Color.WHITE);
-        //     g2d.fillRoundRect(10, msg.y, msg.text.length() * 7 + 20, 30, 15, 15);
-        //     g2d.setColor(Color.BLACK);
-        //     g2d.setFont(new Font("Arial", Font.PLAIN, 14));
-        //     g2d.drawString(msg.text, 20, msg.y + 20);
-        // }
+       
         for (Entity.Player.Message msg : player.messages) {
             // Skip messages that scrolled off screen
             if (msg.y < -50) continue;
@@ -366,16 +357,39 @@ public class GamePanel extends JPanel implements Runnable {
             g2d.setStroke(new BasicStroke(2));
             g2d.drawRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
             
-            // Draw text
+          
+            //! Draw text with styled name
             g2d.setFont(new Font("Arial", Font.BOLD, 14));
-            g2d.setColor(Color.BLACK);
-            
-            // Wrap text if too long
+
             String displayText = msg.text;
             if (displayText.length() > 35) {
                 displayText = displayText.substring(0, 32) + "...";
             }
-            g2d.drawString(displayText, bubbleX + 15, bubbleY + 22);
+
+            // Split name and message
+            int colonIndex = displayText.indexOf(":");
+            if (colonIndex > 0) {
+                // Extract name and message parts
+                String namePart = displayText.substring(0, colonIndex + 1); // "Joe:"
+                String messagePart = displayText.substring(colonIndex + 1); // " Hello!"
+                
+                // Draw NAME with special style
+                g2d.setColor(new Color(0, 102, 204)); // Blue color for name
+                g2d.drawString(namePart, bubbleX + 15, bubbleY + 22);
+                
+                // Calculate width of name to position message next to it
+                int nameWidth = g2d.getFontMetrics().stringWidth(namePart);
+                
+                // Draw MESSAGE in regular black
+                g2d.setColor(Color.BLACK);
+                g2d.drawString(messagePart, bubbleX + 15 + nameWidth, bubbleY + 22);
+            } else {
+                // No colon found, draw entire text normally
+                g2d.setColor(Color.BLACK);
+                g2d.drawString(displayText, bubbleX + 15, bubbleY + 22);
+            }
+
+            
             
             // Draw pointer triangle (pointing LEFT to sprite)
             int[] xPoints = {bubbleX, bubbleX - 10, bubbleX};
