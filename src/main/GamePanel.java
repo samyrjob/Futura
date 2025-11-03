@@ -69,6 +69,8 @@ public class GamePanel extends JPanel implements Runnable {
     UI ui = new UI(this);
 
     ChatBox chatbox;
+
+    private Timer messageTimer;
     
     // MULTIPLAYER COMPONENTS
     public NetworkManager networkManager;  // Made public so Main.java can access it
@@ -76,7 +78,6 @@ public class GamePanel extends JPanel implements Runnable {
     private boolean multiplayerEnabled = false;
     
     // Chat message scrolling
-    private Timer messageTimer;
 
     private Point calculateTileFromMouse(int mouseX, int mouseY) {
         int adjustedX = mouseX - tile_manager.xOffset;
@@ -115,11 +116,23 @@ public class GamePanel extends JPanel implements Runnable {
         networkManager = new NetworkManager(this);
         player.setNetworkManager(networkManager);
         
-        // Start message animation timer (moves messages up)
-        messageTimer = new Timer(1000, e -> {
+        //! Start message animation timer (moves messages up)
+        // messageTimer = new Timer(1000, e -> {
+        //     for (Entity.Player.Message msg : player.messages) {
+        //         msg.y -= 20; // Move message up by 20 pixels
+        //     }
+        //     repaint();
+        // });
+        // messageTimer.start();
+
+
+        messageTimer = new Timer(50, e -> {  // Update every 50ms (smooth!)
             for (Entity.Player.Message msg : player.messages) {
-                msg.y -= 20; // Move message up by 20 pixels
+                //! to change the speed of the bubble
+                msg.y -= 1; // Move up 2 pixels per frame (smooth)
             }
+            // Remove messages that went off screen
+            player.messages.removeIf(m -> m.y < -100);
             repaint();
         });
         messageTimer.start();
@@ -129,43 +142,7 @@ public class GamePanel extends JPanel implements Runnable {
         this.addMouseMotionListener(mouse_adapter);
 
         //! Mouse click for movement
-        // addMouseListener(new MouseAdapter() {
-        //     @Override
-        //     public void mouseClicked(MouseEvent e) {
-        //         //! Don't move player if chat is open
-        //         // if (chatbox.isChatVisible()) {
-        //         //     return;
-        //         // }
-                
-        //         int mouseX = e.getX();
-        //         int mouseY = e.getY();
-
-        //         Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
-
-        //         mouseOverTileX = tilePoint.x;
-        //         mouseOverTileY = tilePoint.y;
-
-        //         if (!(e.getX() >= player.spriteX && e.getX() <= player.spriteX + player.currentSprite.getWidth() && 
-        //               e.getY() >= player.spriteY && e.getY() <= player.spriteY + player.currentSprite.getHeight())){
-
-        //             if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
-        //                 if (mouseOverTileX == previousTileX && mouseOverTileY == previousTileY) {
-        //                     System.out.println("Clicked on the same tile, ignoring...");
-        //                 } else {
-        //                     hoveredTileX = mouseOverTileX;
-        //                     hoveredTileY = mouseOverTileY;
-        //                     System.out.println("Moving to tile: " + hoveredTileX + ", " + hoveredTileY);
-                            
-        //                     // Use pathfinding to move (Habbo-style)
-        //                     player.moveTo(hoveredTileX, hoveredTileY);
-                    
-        //                     previousTileX = hoveredTileX;
-        //                     previousTileY = hoveredTileY;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // });
+       
         // Mouse position tracking - FIXED VERSION
         addMouseListener(new MouseAdapter() {
             @Override
@@ -357,17 +334,60 @@ public class GamePanel extends JPanel implements Runnable {
             profile.draw(g2d);
         }
 
-        // DRAW CHAT MESSAGES (floating up from bottom)
+        //! DRAW CHAT MESSAGES (floating up from bottom)
+        // for (Entity.Player.Message msg : player.messages) {
+        //     // Skip messages that have scrolled too far up
+        //     if (msg.y < -50) continue;
+            
+        //     g2d.setColor(Color.WHITE);
+        //     g2d.fillRoundRect(10, msg.y, msg.text.length() * 7 + 20, 30, 15, 15);
+        //     g2d.setColor(Color.BLACK);
+        //     g2d.setFont(new Font("Arial", Font.PLAIN, 14));
+        //     g2d.drawString(msg.text, 20, msg.y + 20);
+        // }
         for (Entity.Player.Message msg : player.messages) {
-            // Skip messages that have scrolled too far up
+            // Skip messages that scrolled off screen
             if (msg.y < -50) continue;
             
+            // Calculate bubble size based on text length
+            int bubbleWidth = Math.min(msg.text.length() * 8 + 30, 300); // Max width 300
+            int bubbleHeight = 35;
+            
+            // Position bubble to the RIGHT of sprite
+            int bubbleX = player.spriteX + (2 * tileSizeWidth) - 40;
+            int bubbleY = msg.y;
+            
+            // Draw white bubble with rounded corners
             g2d.setColor(Color.WHITE);
-            g2d.fillRoundRect(10, msg.y, msg.text.length() * 7 + 20, 30, 15, 15);
+            g2d.fillRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
+            
+            // Draw black border
             g2d.setColor(Color.BLACK);
-            g2d.setFont(new Font("Arial", Font.PLAIN, 14));
-            g2d.drawString(msg.text, 20, msg.y + 20);
+            g2d.setStroke(new BasicStroke(2));
+            g2d.drawRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
+            
+            // Draw text
+            g2d.setFont(new Font("Arial", Font.BOLD, 14));
+            g2d.setColor(Color.BLACK);
+            
+            // Wrap text if too long
+            String displayText = msg.text;
+            if (displayText.length() > 35) {
+                displayText = displayText.substring(0, 32) + "...";
+            }
+            g2d.drawString(displayText, bubbleX + 15, bubbleY + 22);
+            
+            // Draw pointer triangle (pointing LEFT to sprite)
+            int[] xPoints = {bubbleX, bubbleX - 10, bubbleX};
+            int[] yPoints = {bubbleY + 10, bubbleY + 17, bubbleY + 24};
+            g2d.setColor(Color.WHITE);
+            g2d.fillPolygon(xPoints, yPoints, 3);
+            g2d.setColor(Color.BLACK);
+            g2d.setStroke(new BasicStroke(2));
+            g2d.drawPolyline(xPoints, yPoints, 3);
         }
+
+
 
         // Rendering hints
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);

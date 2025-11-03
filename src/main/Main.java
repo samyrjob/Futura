@@ -183,6 +183,36 @@
 //                         messageField.setFont(messageField.getFont().deriveFont(Font.ITALIC));
 //                         messageField.setText(placeholderText);
 //                     }
+//                     // ✨ NEW: Stop typing indicator when focus lost
+//                     gamepanel.player.setTyping(false);
+//                 }
+//             });
+
+//             // ✨ NEW: Add typing detection listener!
+//             messageField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+//                 @Override
+//                 public void insertUpdate(javax.swing.event.DocumentEvent e) {
+//                     // User is typing!
+//                     String text = messageField.getText();
+//                     if (!text.equals(placeholderText) && !text.trim().isEmpty()) {
+//                         gamepanel.player.setTyping(true);
+//                     }
+//                 }
+
+//                 @Override
+//                 public void removeUpdate(javax.swing.event.DocumentEvent e) {
+//                     // User is still typing (deleting)
+//                     String text = messageField.getText();
+//                     if (!text.isEmpty() && !text.equals(placeholderText)) {
+//                         gamepanel.player.setTyping(true);
+//                     } else {
+//                         gamepanel.player.setTyping(false);
+//                     }
+//                 }
+
+//                 @Override
+//                 public void changedUpdate(javax.swing.event.DocumentEvent e) {
+//                     // Plain text components don't fire these events
 //                 }
 //             });
 
@@ -250,11 +280,10 @@
 //         private void sendChatMessage() {
 
 //             String text = messageField.getText().trim();
-//                 if (text.isEmpty() || text.equals("type here to write a message")) return;
+//             if (text.isEmpty() || text.equals("type here to write a message")) return;
 
-
-
-
+//             // ✨ NEW: Stop typing indicator when message sent
+//             gamepanel.player.setTyping(false);
 
 //             // Add message to player messages
 //             gamepanel.player.messages.add(
@@ -279,7 +308,6 @@
 
 
 // }
-
 package main;
 import javax.swing.*;
 import java.awt.*;
@@ -567,9 +595,10 @@ class LoginFrame extends JFrame {
             // ✨ NEW: Stop typing indicator when message sent
             gamepanel.player.setTyping(false);
 
-            // Add message to player messages
+            // ✨ HABBO STYLE: Start bubble next to sprite head (not bottom of screen!)
+            int bubbleStartY = gamepanel.player.spriteY + 50; // Next to sprite's head
             gamepanel.player.messages.add(
-                new Entity.Player.Message(gamepanel.player.name + ": " + text, gamepanel.getHeight() - 95)
+                new Entity.Player.Message(gamepanel.player.name + ": " + text, bubbleStartY)
             );
 
             // Send message to other players if multiplayer enabled
