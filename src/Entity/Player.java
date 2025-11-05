@@ -396,7 +396,7 @@ public class Player extends Entity {
 
 
 
-    public Direction calculateDirectionToTarget(int targetX, int targetY) {
+public Direction calculateDirectionToTarget(int targetX, int targetY) {
     int deltaX = targetX - xCurrent;
     int deltaY = targetY - yCurrent;
     
@@ -405,27 +405,59 @@ public class Player extends Entity {
         return direction; // Keep current direction
     }
     
-    // Calculate which direction to face based on position difference
+    // When on same ISO_X axis (deltaX == 0), use ISO_Y directions
     if (deltaX == 0) {
-        // Same column - face up or down
         return (deltaY > 0) ? Direction.ISO_Y_DOWN : Direction.ISO_Y_UP;
-    } else if (deltaY == 0) {
-        // Same row - face left or right
+    } 
+    // When on same ISO_Y axis (deltaY == 0), use ISO_X directions
+    else if (deltaY == 0) {
         return (deltaX > 0) ? Direction.ISO_X_RIGHT : Direction.ISO_X_LEFT;
-    } else if (deltaX > 0 && deltaY > 0) {
-        // Target is to the bottom-right
-        return Direction.ISO_Y_DOWN;
-    } else if (deltaX > 0 && deltaY < 0) {
-        // Target is to the top-right
-        return Direction.ISO_X_RIGHT;
-    } else if (deltaX < 0 && deltaY > 0) {
-        // Target is to the bottom-left
-        return Direction.ISO_X_LEFT;
-    } else {
-        // Target is to the top-left (deltaX < 0 && deltaY < 0)
-        return Direction.ISO_Y_UP;
     }
+    // ✨ DIAGONAL detection with tolerance
+    else {
+        // Calculate the ratio to see if it's close to diagonal
+        double ratio = (double) Math.abs(deltaX) / Math.abs(deltaY);
+        
+        // If ratio is between 0.7 and 1.4, consider it diagonal
+        boolean isDiagonalish = (ratio >= 0.7 && ratio <= 1.4);
+        
+        if (isDiagonalish) {
+            // Bottom-right quadrant → DIAGONALE_DOWN
+            if (deltaX > 0 && deltaY > 0) {
+                return Direction.DIAGONALE_DOWN;
+            }
+            // Top-left quadrant → DIAGONALE_UP
+            else if (deltaX < 0 && deltaY < 0) {
+                return Direction.DIAGONALE_UP;
+            }
+            // Top-right quadrant → RIGHT
+            else if (deltaX > 0 && deltaY < 0) {
+                return Direction.RIGHT;
+            }
+            // Bottom-left quadrant → LEFT
+            else if (deltaX < 0 && deltaY > 0) {
+                return Direction.LEFT;
+            }
+        }
+        
+        // Not diagonal enough - use ISO directions based on which is larger
+        if (deltaX > 0 && deltaY > 0) {
+            // Bottom-right quadrant
+            return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.DIAGONALE_DOWN : Direction.DIAGONALE_UP;
+        } else if (deltaX > 0 && deltaY < 0) {
+            // Top-right quadrant
+            return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.RIGHT : Direction.LEFT;
+        } else if (deltaX < 0 && deltaY > 0) {
+            // Bottom-left quadrant
+            return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.LEFT: Direction.RIGHT;
+        } else {
+            // Top-left quadrant
+            return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.DIAGONALE_UP : Direction.DIAGONALE_DOWN;
+        }
     }
+}
+
+
 
     public void faceDirection(Direction newDirection) {
     this.direction = newDirection;
