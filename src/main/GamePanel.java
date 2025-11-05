@@ -2,10 +2,12 @@ package main;
 
 import Entity.Player;
 import Entity.RemotePlayer;
+import Entity.Entity.Direction;
 import Entity.Entity.Gender;
 import message.ChatBox;
 import Entity.Player.Message;
 import message.Profile;
+import message.RemoteProfile;
 import mouse.HandleMouseHover;
 import mouse.MyMouseAdapter;
 import network.NetworkManager;
@@ -61,6 +63,7 @@ public class GamePanel extends JPanel implements Runnable {
     MyMouseAdapter mouse_adapter = new MyMouseAdapter(this);
     public Player player;
     Profile profile;
+    RemoteProfile remoteProfile;  // ✨ ADD THIS for remote player profile
     Boolean displayProfile = false;
 
     Sound sound = new Sound();
@@ -98,6 +101,7 @@ public class GamePanel extends JPanel implements Runnable {
 
         chatbox = new ChatBox(this, player);
         profile = new Profile(this, player);
+        remoteProfile = new RemoteProfile(this);  // ✨ ADD THIS
 
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
         this.setBackground(Color.BLACK);
@@ -117,22 +121,35 @@ public class GamePanel extends JPanel implements Runnable {
         player.setNetworkManager(networkManager);
         
         //! Start message animation timer (moves messages up)
-        // messageTimer = new Timer(1000, e -> {
+      
+
+
+        // messageTimer = new Timer(50, e -> {  // Update every 50ms (smooth!)
         //     for (Entity.Player.Message msg : player.messages) {
-        //         msg.y -= 20; // Move message up by 20 pixels
+        //         //! to change the speed of the bubble
+        //         msg.y -= 1; // Move up 2 pixels per frame (smooth)
         //     }
+        //     // Remove messages that went off screen
+        //     player.messages.removeIf(m -> m.y < -100);
         //     repaint();
         // });
-        // messageTimer.start();
-
-
-        messageTimer = new Timer(50, e -> {  // Update every 50ms (smooth!)
+        messageTimer = new Timer(100, e -> {
+            // Move local player messages
             for (Entity.Player.Message msg : player.messages) {
-                //! to change the speed of the bubble
-                msg.y -= 1; // Move up 2 pixels per frame (smooth)
+                msg.y -= 1;
             }
-            // Remove messages that went off screen
             player.messages.removeIf(m -> m.y < -100);
+            
+            // ✨ NEW: Move remote players' messages too!
+            synchronized (remotePlayers) {
+                for (RemotePlayer rp : remotePlayers.values()) {
+                    for (RemotePlayer.Message msg : rp.messages) {
+                        msg.y -= 1;
+                    }
+                    rp.messages.removeIf(m -> m.y < -100);
+                }
+            }
+            
             repaint();
         });
         messageTimer.start();
@@ -143,38 +160,115 @@ public class GamePanel extends JPanel implements Runnable {
 
         //! Mouse click for movement
        
-        // Mouse position tracking - FIXED VERSION
+        //! Mouse position tracking - FIXED VERSION
+        // addMouseListener(new MouseAdapter() {
+        //     @Override
+        //     public void mouseClicked(MouseEvent e) {
+        //         int mouseX = e.getX();
+        //         int mouseY = e.getY();
+
+        //         Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
+
+        //         mouseOverTileX = tilePoint.x;
+        //         mouseOverTileY = tilePoint.y;
+
+        //         // FIXED: Use smaller, precise hitbox instead of full image size
+        //         int drawnWidth = 2 * tileSizeWidth;   // 192 pixels
+        //         int drawnHeight = 4 * tileSizeHeight; // 192 pixels
+                
+        //         // Make hitbox smaller (only character body)
+        //         int hitboxWidth = (int)(drawnWidth * 0.4);   // 40% width
+        //         int hitboxHeight = (int)(drawnHeight * 0.5); // 50% height
+                
+        //         // Center horizontally, position at bottom
+        //         int hitboxX = player.spriteX + (drawnWidth - hitboxWidth) / 2;
+        //         int hitboxY = player.spriteY + drawnHeight - hitboxHeight;
+                
+        //         // Check if click is NOT on sprite
+        //         boolean clickedOnSprite = (mouseX >= hitboxX && 
+        //                                   mouseX <= hitboxX + hitboxWidth &&
+        //                                   mouseY >= hitboxY && 
+        //                                   mouseY <= hitboxY + hitboxHeight);
+
+        //         if (!clickedOnSprite) {
+        //             // Click was on a tile, not on sprite - MOVE!
+        //             if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && 
+        //                 mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
+                        
+        //                 if (mouseOverTileX == previousTileX && mouseOverTileY == previousTileY) {
+        //                     System.out.println("Clicked on the same tile, ignoring...");
+        //                 } else {
+        //                     hoveredTileX = mouseOverTileX;
+        //                     hoveredTileY = mouseOverTileY;
+        //                     System.out.println("Moving to tile: " + hoveredTileX + ", " + hoveredTileY);
+                            
+        //                     // Use pathfinding to move (if you have it)
+        //                     player.moveTo(hoveredTileX, hoveredTileY);
+                    
+        //                     previousTileX = hoveredTileX;
+        //                     previousTileY = hoveredTileY;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // });
+        // Mouse click handler - UPDATED WITH REMOTE PLAYER INTERACTION
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int mouseX = e.getX();
                 int mouseY = e.getY();
-
-                Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
-
-                mouseOverTileX = tilePoint.x;
-                mouseOverTileY = tilePoint.y;
-
-                // FIXED: Use smaller, precise hitbox instead of full image size
-                int drawnWidth = 2 * tileSizeWidth;   // 192 pixels
-                int drawnHeight = 4 * tileSizeHeight; // 192 pixels
                 
-                // Make hitbox smaller (only character body)
-                int hitboxWidth = (int)(drawnWidth * 0.4);   // 40% width
-                int hitboxHeight = (int)(drawnHeight * 0.5); // 50% height
+                // ✨ FIRST: Check if clicked on LOCAL player (show own profile)
+                if (player.contains(mouseX, mouseY)) {
+                    displayProfile = !displayProfile;
+                    remoteProfile.hideProfile(); // Hide remote profile if showing
+                    return;
+                }
                 
-                // Center horizontally, position at bottom
-                int hitboxX = player.spriteX + (drawnWidth - hitboxWidth) / 2;
-                int hitboxY = player.spriteY + drawnHeight - hitboxHeight;
+                // ✨ SECOND: Check if clicked on any REMOTE player
+                boolean clickedOnRemotePlayer = false;
+                synchronized (remotePlayers) {
+                    for (RemotePlayer remotePlayer : remotePlayers.values()) {
+                        if (remotePlayer.contains(mouseX, mouseY)) {
+                            clickedOnRemotePlayer = true;
+                            
+                            // Calculate direction to face the remote player
+                            Direction newDirection = player.calculateDirectionToTarget(
+                                remotePlayer.xCurrent, 
+                                remotePlayer.yCurrent
+                            );
+                            
+                            // Make local player face the remote player
+                            player.faceDirection(newDirection);
+                            
+                            // Send the direction change to network
+                            if (networkManager != null && networkManager.isConnected()) {
+                                networkManager.sendMoveMessage(
+                                    player.xCurrent, 
+                                    player.yCurrent, 
+                                    player.direction.toString(), 
+                                    false
+                                );
+                            }
+                            
+                            // Toggle remote player's profile
+                            remoteProfile.toggleProfile(remotePlayer);
+                            displayProfile = false; // Hide own profile if showing
+                            
+                            System.out.println("Clicked on remote player: " + remotePlayer.name);
+                            return;
+                        }
+                    }
+                }
                 
-                // Check if click is NOT on sprite
-                boolean clickedOnSprite = (mouseX >= hitboxX && 
-                                          mouseX <= hitboxX + hitboxWidth &&
-                                          mouseY >= hitboxY && 
-                                          mouseY <= hitboxY + hitboxHeight);
-
-                if (!clickedOnSprite) {
-                    // Click was on a tile, not on sprite - MOVE!
+                // ✨ THIRD: If clicked on empty tile (not on any sprite)
+                if (!clickedOnRemotePlayer) {
+                    Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
+                    mouseOverTileX = tilePoint.x;
+                    mouseOverTileY = tilePoint.y;
+                    
+                    // Check if click is on a valid tile for movement
                     if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && 
                         mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
                         
@@ -185,11 +279,15 @@ public class GamePanel extends JPanel implements Runnable {
                             hoveredTileY = mouseOverTileY;
                             System.out.println("Moving to tile: " + hoveredTileX + ", " + hoveredTileY);
                             
-                            // Use pathfinding to move (if you have it)
+                            // Move player
                             player.moveTo(hoveredTileX, hoveredTileY);
-                    
+                            
                             previousTileX = hoveredTileX;
                             previousTileY = hoveredTileY;
+                            
+                            // Hide both profiles when moving
+                            displayProfile = false;
+                            remoteProfile.hideProfile();
                         }
                     }
                 }
@@ -197,13 +295,13 @@ public class GamePanel extends JPanel implements Runnable {
         });
 
         // Profile display on sprite click
-        addMouseListener(new MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent e){
-                if (player.contains(e.getX(), e.getY())) {
-                    displayProfile = !displayProfile;
-                }
-            }
-        });
+        // addMouseListener(new MouseAdapter() {
+        //     public void mouseClicked(java.awt.event.MouseEvent e){
+        //         if (player.contains(e.getX(), e.getY())) {
+        //             displayProfile = !displayProfile;
+        //         }
+        //     }
+        // });
     }
 
     public void startGameThread() {
@@ -257,9 +355,21 @@ public class GamePanel extends JPanel implements Runnable {
         System.out.println("Removed remote player: " + username);
     }
     
+    //! some changes
+    // public synchronized void addRemotePlayerChat(String username, String text) {
+    //     // Add chat message from remote player (will float up on screen)
+    //     player.messages.add(new Entity.Player.Message(username + ": " + text, getHeight() - 95));
+    //     repaint();
+    // }
+
     public synchronized void addRemotePlayerChat(String username, String text) {
-        // Add chat message from remote player (will float up on screen)
-        player.messages.add(new Entity.Player.Message(username + ": " + text, getHeight() - 95));
+        // Find the remote player and add message to THEIR list
+        RemotePlayer remotePlayer = remotePlayers.get(username);
+        if (remotePlayer != null) {
+            // Start bubble at THEIR sprite head (not bottom of screen!)
+            int bubbleStartY = remotePlayer.spriteY + 50;
+            remotePlayer.messages.add(new RemotePlayer.Message(username + ": " + text, bubbleStartY));
+        }
         repaint();
     }
     
@@ -327,6 +437,70 @@ public class GamePanel extends JPanel implements Runnable {
                 remotePlayer.draw(g2d);
             }
         }
+        // ✨ NEW: DRAW REMOTE PLAYERS' CHAT BUBBLES
+        //! DRAW REMOTE PLAYERS' CHAT BUBBLES (ONE LINE ONLY!)
+        synchronized (remotePlayers) {
+            for (RemotePlayer remotePlayer : remotePlayers.values()) {
+                for (RemotePlayer.Message msg : remotePlayer.messages) {
+                    if (msg.y < -50) continue;
+                    
+                    String displayText = msg.text;
+                    
+                    // ✨ LIMIT: Max 200 characters
+                    if (displayText.length() > 200) {
+                        displayText = displayText.substring(0, 200);
+                    }
+                    
+                    //! bubble width to change after
+                    // int bubbleWidth = Math.max(displayText.length() * 10 + 40, 900);
+                    // REPLACE THIS (for both local and remote players):
+                    // int bubbleWidth = Math.min(displayText.length() * 8 + 30, 420);
+
+                    // WITH THIS:
+                    FontMetrics fm = g2d.getFontMetrics();
+                    int textWidth = fm.stringWidth(displayText);
+                    int bubbleWidth = textWidth + 50; // 40px for padding, max 450px
+                    int bubbleHeight = 35;
+                    
+                    int bubbleX = remotePlayer.spriteX + (2 * tileSizeWidth) - 30;
+                    int bubbleY = msg.y;
+                    
+                    g2d.setColor(Color.WHITE);
+                    g2d.fillRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
+                    
+                    g2d.setColor(Color.BLACK);
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.drawRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
+                    
+                    g2d.setFont(new Font("Arial", Font.BOLD, 14));
+                    
+                    int colonIndex = displayText.indexOf(":");
+                    if (colonIndex > 0) {
+                        String namePart = displayText.substring(0, colonIndex + 1);
+                        String messagePart = displayText.substring(colonIndex + 1);
+                        
+                        g2d.setColor(new Color(0, 102, 204));
+                        g2d.drawString(namePart, bubbleX + 15, bubbleY + 22);
+                        
+                        int nameWidth = g2d.getFontMetrics().stringWidth(namePart);
+                        
+                        g2d.setColor(Color.BLACK);
+                        g2d.drawString(messagePart, bubbleX + 15 + nameWidth, bubbleY + 22);
+                    } else {
+                        g2d.setColor(Color.BLACK);
+                        g2d.drawString(displayText, bubbleX + 15, bubbleY + 22);
+                    }
+                    
+                    int[] xPoints = {bubbleX, bubbleX - 10, bubbleX};
+                    int[] yPoints = {bubbleY + 10, bubbleY + 17, bubbleY + 24};
+                    g2d.setColor(Color.WHITE);
+                    g2d.fillPolygon(xPoints, yPoints, 3);
+                    g2d.setColor(Color.BLACK);
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.drawPolyline(xPoints, yPoints, 3);
+                }
+            }
+        }
 
         ui.draw(g2d);
 
@@ -334,64 +508,72 @@ public class GamePanel extends JPanel implements Runnable {
             profile.draw(g2d);
         }
 
+         // ✨ ADD THIS - Draw remote player profile
+        if (remoteProfile.isVisible()) {
+            remoteProfile.draw(g2d);
+        }
+
         //! DRAW CHAT MESSAGES (floating up from bottom)
        
+       // DRAW CHAT MESSAGES (Habbo Hotel style - ONE LINE ONLY!)
         for (Entity.Player.Message msg : player.messages) {
-            // Skip messages that scrolled off screen
             if (msg.y < -50) continue;
             
-            // Calculate bubble size based on text length
-            int bubbleWidth = Math.min(msg.text.length() * 8 + 30, 300); // Max width 300
+            String displayText = msg.text;
+            
+            // ✨ LIMIT: Max 200 characters (like Habbo!)
+            if (displayText.length() > 200) {
+                displayText = displayText.substring(0, 200);
+            }
+            
+            //! Calculate bubble size
+            // int bubbleWidth = Math.min(displayText.length() * 8 + 30, 420);
+            // REPLACE THIS (for both local and remote players):
+            // int bubbleWidth = Math.min(displayText.length() * 8 + 30, 420);
+
+            // WITH THIS:
+            FontMetrics fm = g2d.getFontMetrics();
+            int textWidth = fm.stringWidth(displayText);
+            int bubbleWidth = textWidth + 50; // 40px for padding, max 450px
+            
             int bubbleHeight = 35;
             
-            // Position bubble to the RIGHT of sprite
-            int bubbleX = player.spriteX + (2 * tileSizeWidth) - 40;
+            // Position bubble
+            int bubbleX = player.spriteX + (2 * tileSizeWidth) - 30;
             int bubbleY = msg.y;
             
-            // Draw white bubble with rounded corners
+            // Draw white bubble
             g2d.setColor(Color.WHITE);
             g2d.fillRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
             
-            // Draw black border
+            // Draw border
             g2d.setColor(Color.BLACK);
             g2d.setStroke(new BasicStroke(2));
             g2d.drawRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 20, 20);
             
-          
-            //! Draw text with styled name
+            // Draw text with styled name (ONE LINE!)
             g2d.setFont(new Font("Arial", Font.BOLD, 14));
-
-            String displayText = msg.text;
-            if (displayText.length() > 35) {
-                displayText = displayText.substring(0, 32) + "...";
-            }
-
-            // Split name and message
+            
             int colonIndex = displayText.indexOf(":");
             if (colonIndex > 0) {
-                // Extract name and message parts
-                String namePart = displayText.substring(0, colonIndex + 1); // "Joe:"
-                String messagePart = displayText.substring(colonIndex + 1); // " Hello!"
+                String namePart = displayText.substring(0, colonIndex + 1);
+                String messagePart = displayText.substring(colonIndex + 1);
                 
-                // Draw NAME with special style
-                g2d.setColor(new Color(0, 102, 204)); // Blue color for name
+                // Draw name in blue
+                g2d.setColor(new Color(0, 102, 204));
                 g2d.drawString(namePart, bubbleX + 15, bubbleY + 22);
                 
-                // Calculate width of name to position message next to it
                 int nameWidth = g2d.getFontMetrics().stringWidth(namePart);
                 
-                // Draw MESSAGE in regular black
+                // Draw message in black
                 g2d.setColor(Color.BLACK);
                 g2d.drawString(messagePart, bubbleX + 15 + nameWidth, bubbleY + 22);
             } else {
-                // No colon found, draw entire text normally
                 g2d.setColor(Color.BLACK);
                 g2d.drawString(displayText, bubbleX + 15, bubbleY + 22);
             }
-
             
-            
-            // Draw pointer triangle (pointing LEFT to sprite)
+            // Draw pointer triangle
             int[] xPoints = {bubbleX, bubbleX - 10, bubbleX};
             int[] yPoints = {bubbleY + 10, bubbleY + 17, bubbleY + 24};
             g2d.setColor(Color.WHITE);
