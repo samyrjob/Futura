@@ -2,10 +2,12 @@ package main;
 
 import Entity.Player;
 import Entity.RemotePlayer;
+import Entity.Entity.Direction;
 import Entity.Entity.Gender;
 import message.ChatBox;
 import Entity.Player.Message;
 import message.Profile;
+import message.RemoteProfile;
 import mouse.HandleMouseHover;
 import mouse.MyMouseAdapter;
 import network.NetworkManager;
@@ -61,6 +63,7 @@ public class GamePanel extends JPanel implements Runnable {
     MyMouseAdapter mouse_adapter = new MyMouseAdapter(this);
     public Player player;
     Profile profile;
+    RemoteProfile remoteProfile;  // ✨ ADD THIS for remote player profile
     Boolean displayProfile = false;
 
     Sound sound = new Sound();
@@ -98,6 +101,7 @@ public class GamePanel extends JPanel implements Runnable {
 
         chatbox = new ChatBox(this, player);
         profile = new Profile(this, player);
+        remoteProfile = new RemoteProfile(this);  // ✨ ADD THIS
 
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
         this.setBackground(Color.BLACK);
@@ -156,38 +160,115 @@ public class GamePanel extends JPanel implements Runnable {
 
         //! Mouse click for movement
        
-        // Mouse position tracking - FIXED VERSION
+        //! Mouse position tracking - FIXED VERSION
+        // addMouseListener(new MouseAdapter() {
+        //     @Override
+        //     public void mouseClicked(MouseEvent e) {
+        //         int mouseX = e.getX();
+        //         int mouseY = e.getY();
+
+        //         Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
+
+        //         mouseOverTileX = tilePoint.x;
+        //         mouseOverTileY = tilePoint.y;
+
+        //         // FIXED: Use smaller, precise hitbox instead of full image size
+        //         int drawnWidth = 2 * tileSizeWidth;   // 192 pixels
+        //         int drawnHeight = 4 * tileSizeHeight; // 192 pixels
+                
+        //         // Make hitbox smaller (only character body)
+        //         int hitboxWidth = (int)(drawnWidth * 0.4);   // 40% width
+        //         int hitboxHeight = (int)(drawnHeight * 0.5); // 50% height
+                
+        //         // Center horizontally, position at bottom
+        //         int hitboxX = player.spriteX + (drawnWidth - hitboxWidth) / 2;
+        //         int hitboxY = player.spriteY + drawnHeight - hitboxHeight;
+                
+        //         // Check if click is NOT on sprite
+        //         boolean clickedOnSprite = (mouseX >= hitboxX && 
+        //                                   mouseX <= hitboxX + hitboxWidth &&
+        //                                   mouseY >= hitboxY && 
+        //                                   mouseY <= hitboxY + hitboxHeight);
+
+        //         if (!clickedOnSprite) {
+        //             // Click was on a tile, not on sprite - MOVE!
+        //             if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && 
+        //                 mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
+                        
+        //                 if (mouseOverTileX == previousTileX && mouseOverTileY == previousTileY) {
+        //                     System.out.println("Clicked on the same tile, ignoring...");
+        //                 } else {
+        //                     hoveredTileX = mouseOverTileX;
+        //                     hoveredTileY = mouseOverTileY;
+        //                     System.out.println("Moving to tile: " + hoveredTileX + ", " + hoveredTileY);
+                            
+        //                     // Use pathfinding to move (if you have it)
+        //                     player.moveTo(hoveredTileX, hoveredTileY);
+                    
+        //                     previousTileX = hoveredTileX;
+        //                     previousTileY = hoveredTileY;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // });
+        // Mouse click handler - UPDATED WITH REMOTE PLAYER INTERACTION
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int mouseX = e.getX();
                 int mouseY = e.getY();
-
-                Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
-
-                mouseOverTileX = tilePoint.x;
-                mouseOverTileY = tilePoint.y;
-
-                // FIXED: Use smaller, precise hitbox instead of full image size
-                int drawnWidth = 2 * tileSizeWidth;   // 192 pixels
-                int drawnHeight = 4 * tileSizeHeight; // 192 pixels
                 
-                // Make hitbox smaller (only character body)
-                int hitboxWidth = (int)(drawnWidth * 0.4);   // 40% width
-                int hitboxHeight = (int)(drawnHeight * 0.5); // 50% height
+                // ✨ FIRST: Check if clicked on LOCAL player (show own profile)
+                if (player.contains(mouseX, mouseY)) {
+                    displayProfile = !displayProfile;
+                    remoteProfile.hideProfile(); // Hide remote profile if showing
+                    return;
+                }
                 
-                // Center horizontally, position at bottom
-                int hitboxX = player.spriteX + (drawnWidth - hitboxWidth) / 2;
-                int hitboxY = player.spriteY + drawnHeight - hitboxHeight;
+                // ✨ SECOND: Check if clicked on any REMOTE player
+                boolean clickedOnRemotePlayer = false;
+                synchronized (remotePlayers) {
+                    for (RemotePlayer remotePlayer : remotePlayers.values()) {
+                        if (remotePlayer.contains(mouseX, mouseY)) {
+                            clickedOnRemotePlayer = true;
+                            
+                            // Calculate direction to face the remote player
+                            Direction newDirection = player.calculateDirectionToTarget(
+                                remotePlayer.xCurrent, 
+                                remotePlayer.yCurrent
+                            );
+                            
+                            // Make local player face the remote player
+                            player.faceDirection(newDirection);
+                            
+                            // Send the direction change to network
+                            if (networkManager != null && networkManager.isConnected()) {
+                                networkManager.sendMoveMessage(
+                                    player.xCurrent, 
+                                    player.yCurrent, 
+                                    player.direction.toString(), 
+                                    false
+                                );
+                            }
+                            
+                            // Toggle remote player's profile
+                            remoteProfile.toggleProfile(remotePlayer);
+                            displayProfile = false; // Hide own profile if showing
+                            
+                            System.out.println("Clicked on remote player: " + remotePlayer.name);
+                            return;
+                        }
+                    }
+                }
                 
-                // Check if click is NOT on sprite
-                boolean clickedOnSprite = (mouseX >= hitboxX && 
-                                          mouseX <= hitboxX + hitboxWidth &&
-                                          mouseY >= hitboxY && 
-                                          mouseY <= hitboxY + hitboxHeight);
-
-                if (!clickedOnSprite) {
-                    // Click was on a tile, not on sprite - MOVE!
+                // ✨ THIRD: If clicked on empty tile (not on any sprite)
+                if (!clickedOnRemotePlayer) {
+                    Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
+                    mouseOverTileX = tilePoint.x;
+                    mouseOverTileY = tilePoint.y;
+                    
+                    // Check if click is on a valid tile for movement
                     if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && 
                         mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
                         
@@ -198,11 +279,15 @@ public class GamePanel extends JPanel implements Runnable {
                             hoveredTileY = mouseOverTileY;
                             System.out.println("Moving to tile: " + hoveredTileX + ", " + hoveredTileY);
                             
-                            // Use pathfinding to move (if you have it)
+                            // Move player
                             player.moveTo(hoveredTileX, hoveredTileY);
-                    
+                            
                             previousTileX = hoveredTileX;
                             previousTileY = hoveredTileY;
+                            
+                            // Hide both profiles when moving
+                            displayProfile = false;
+                            remoteProfile.hideProfile();
                         }
                     }
                 }
@@ -210,13 +295,13 @@ public class GamePanel extends JPanel implements Runnable {
         });
 
         // Profile display on sprite click
-        addMouseListener(new MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent e){
-                if (player.contains(e.getX(), e.getY())) {
-                    displayProfile = !displayProfile;
-                }
-            }
-        });
+        // addMouseListener(new MouseAdapter() {
+        //     public void mouseClicked(java.awt.event.MouseEvent e){
+        //         if (player.contains(e.getX(), e.getY())) {
+        //             displayProfile = !displayProfile;
+        //         }
+        //     }
+        // });
     }
 
     public void startGameThread() {
@@ -421,6 +506,11 @@ public class GamePanel extends JPanel implements Runnable {
 
         if (displayProfile){
             profile.draw(g2d);
+        }
+
+         // ✨ ADD THIS - Draw remote player profile
+        if (remoteProfile.isVisible()) {
+            remoteProfile.draw(g2d);
         }
 
         //! DRAW CHAT MESSAGES (floating up from bottom)

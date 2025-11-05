@@ -369,12 +369,96 @@ public class Player extends Entity {
         drawTypingBubble(g2d);
     }
 
+    // public boolean contains(int mouseX, int mouseY) {
+    //     return mouseX >= spriteX &&
+    //            mouseX <= spriteX + currentSprite.getWidth() &&
+    //            mouseY >= spriteY &&
+    //            mouseY <= spriteY + currentSprite.getHeight();
+    // }
     public boolean contains(int mouseX, int mouseY) {
-        return mouseX >= spriteX &&
-               mouseX <= spriteX + currentSprite.getWidth() &&
-               mouseY >= spriteY &&
-               mouseY <= spriteY + currentSprite.getHeight();
+    // Use the SAME hitbox calculation as in GamePanel
+    int drawnWidth = 2 * gp.tileSizeWidth;
+    int drawnHeight = 4 * gp.tileSizeHeight;
+    
+    // Make hitbox smaller (only character body - 40% width, 50% height)
+    int hitboxWidth = (int)(drawnWidth * 0.4);
+    int hitboxHeight = (int)(drawnHeight * 0.5);
+    
+    // Center horizontally, position at bottom
+    int hitboxX = spriteX + (drawnWidth - hitboxWidth) / 2;
+    int hitboxY = spriteY + drawnHeight - hitboxHeight;
+    
+    return (mouseX >= hitboxX && 
+            mouseX <= hitboxX + hitboxWidth &&
+            mouseY >= hitboxY && 
+            mouseY <= hitboxY + hitboxHeight);
+}
+
+
+
+    public Direction calculateDirectionToTarget(int targetX, int targetY) {
+    int deltaX = targetX - xCurrent;
+    int deltaY = targetY - yCurrent;
+    
+    // If already at the same position
+    if (deltaX == 0 && deltaY == 0) {
+        return direction; // Keep current direction
     }
+    
+    // Calculate which direction to face based on position difference
+    if (deltaX == 0) {
+        // Same column - face up or down
+        return (deltaY > 0) ? Direction.ISO_Y_DOWN : Direction.ISO_Y_UP;
+    } else if (deltaY == 0) {
+        // Same row - face left or right
+        return (deltaX > 0) ? Direction.ISO_X_RIGHT : Direction.ISO_X_LEFT;
+    } else if (deltaX > 0 && deltaY > 0) {
+        // Target is to the bottom-right
+        return Direction.ISO_Y_DOWN;
+    } else if (deltaX > 0 && deltaY < 0) {
+        // Target is to the top-right
+        return Direction.ISO_X_RIGHT;
+    } else if (deltaX < 0 && deltaY > 0) {
+        // Target is to the bottom-left
+        return Direction.ISO_X_LEFT;
+    } else {
+        // Target is to the top-left (deltaX < 0 && deltaY < 0)
+        return Direction.ISO_Y_UP;
+    }
+    }
+
+    public void faceDirection(Direction newDirection) {
+    this.direction = newDirection;
+    this.in_movement = false; // Make sure we show the standing sprite
+    
+    // Directly set the current sprite based on new direction (standing pose)
+    switch (newDirection) {
+        case DIAGONALE_UP:
+            currentSprite = playerImageDiagonaleUp;
+            break;
+        case DIAGONALE_DOWN:
+            currentSprite = playerImageDiagonaleDown;
+            break;
+        case ISO_Y_UP:
+            currentSprite = playerImageIsoYUp;
+            break;
+        case ISO_Y_DOWN:
+            currentSprite = playerImageIsoYDown;
+            break;
+        case ISO_X_LEFT:
+            currentSprite = playerImageIsoXLeft;
+            break;
+        case ISO_X_RIGHT:
+            currentSprite = playerImageIsoXRight;
+            break;
+        case RIGHT:
+            currentSprite = playerImageRight;
+            break;
+        case LEFT:
+            currentSprite = playerImageLeft;
+            break;
+    }
+}
 
     // Message class
     public static class Message {
