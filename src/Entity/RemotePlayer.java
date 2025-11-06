@@ -108,7 +108,7 @@ public class RemotePlayer extends Entity {
         updateSpritePosition();
     }
     
-    private void updateSpritePosition() {
+    public void updateSpritePosition() {
         int tileCenterX = conversion_from_mapXY_to_tilecenterX(xCurrent, yCurrent);
         int tileCenterY = conversion_from_mapXY_to_tilecenterY(xCurrent, yCurrent);
         
@@ -133,6 +133,8 @@ public class RemotePlayer extends Entity {
             }
         }
         updateCurrentSprite();
+         // ✨ ALWAYS update sprite position (in case map was dragged)
+        updateSpritePosition();
     }
     
     private void updateCurrentSprite() {

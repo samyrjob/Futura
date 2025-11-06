@@ -120,19 +120,19 @@ public class Player extends Entity {
     }
 
     // Coordinate conversions
-    int conversion_from_mapXY_to_tilecenterX(int mapX, int mapY){
+    public int conversion_from_mapXY_to_tilecenterX(int mapX, int mapY){
         return (mapX - mapY)*(gp.tileSizeWidth / 2) + gp.tile_manager.xOffset + (gp.tileSizeWidth / 2);
     }
     
-    int conversion_from_mapXY_to_tilecenterY(int mapX, int mapY){
+    public int conversion_from_mapXY_to_tilecenterY(int mapX, int mapY){
         return (mapX + mapY)*(gp.tileSizeHeight/2)  + gp.tile_manager.yOffset + (gp.tileSizeHeight/ 2);
     }
 
-    int conversion_from_mapXY_to_spriteX(int mapX, int mapY){
+    public int conversion_from_mapXY_to_spriteX(int mapX, int mapY){
         return conversion_from_mapXY_to_tilecenterX(mapX, mapY) - gp.tileSizeWidth;
     }
     
-    int conversion_from_mapXY_to_spriteY(int mapX, int mapY){
+    public int conversion_from_mapXY_to_spriteY(int mapX, int mapY){
         return conversion_from_mapXY_to_tilecenterY(mapX, mapY) - (3*gp.tileSizeHeight);
     }
 

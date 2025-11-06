@@ -79,6 +79,16 @@ public class GamePanel extends JPanel implements Runnable {
     public NetworkManager networkManager;  // Made public so Main.java can access it
     private Map<String, RemotePlayer> remotePlayers;
     private boolean multiplayerEnabled = false;
+
+
+
+    // for dragging the room
+    // Add these fields with your other declarations at the top
+    private boolean isDragging = false;
+    private int dragStartX = 0;
+    private int dragStartY = 0;
+    private int originalXOffset;
+    private int originalYOffset;
     
     // Chat message scrolling
 
@@ -156,42 +166,66 @@ public class GamePanel extends JPanel implements Runnable {
 
         // HOVER OF THE MOUSE ONTO A TILE
         this.addMouseListener(mouse_adapter);
-        this.addMouseMotionListener(mouse_adapter);
+        // this.addMouseMotionListener(mouse_adapter);
 
-        //! Mouse click for movement
        
-        //! Mouse position tracking - FIXED VERSION
+        // // Mouse click handler - UPDATED WITH REMOTE PLAYER INTERACTION
         // addMouseListener(new MouseAdapter() {
         //     @Override
         //     public void mouseClicked(MouseEvent e) {
         //         int mouseX = e.getX();
         //         int mouseY = e.getY();
-
-        //         Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
-
-        //         mouseOverTileX = tilePoint.x;
-        //         mouseOverTileY = tilePoint.y;
-
-        //         // FIXED: Use smaller, precise hitbox instead of full image size
-        //         int drawnWidth = 2 * tileSizeWidth;   // 192 pixels
-        //         int drawnHeight = 4 * tileSizeHeight; // 192 pixels
                 
-        //         // Make hitbox smaller (only character body)
-        //         int hitboxWidth = (int)(drawnWidth * 0.4);   // 40% width
-        //         int hitboxHeight = (int)(drawnHeight * 0.5); // 50% height
+        //         // ✨ FIRST: Check if clicked on LOCAL player (show own profile)
+        //         if (player.contains(mouseX, mouseY)) {
+        //             displayProfile = !displayProfile;
+        //             remoteProfile.hideProfile(); // Hide remote profile if showing
+        //             return;
+        //         }
                 
-        //         // Center horizontally, position at bottom
-        //         int hitboxX = player.spriteX + (drawnWidth - hitboxWidth) / 2;
-        //         int hitboxY = player.spriteY + drawnHeight - hitboxHeight;
+        //         // ✨ SECOND: Check if clicked on any REMOTE player
+        //         boolean clickedOnRemotePlayer = false;
+        //         synchronized (remotePlayers) {
+        //             for (RemotePlayer remotePlayer : remotePlayers.values()) {
+        //                 if (remotePlayer.contains(mouseX, mouseY)) {
+        //                     clickedOnRemotePlayer = true;
+                            
+        //                     // Calculate direction to face the remote player
+        //                     Direction newDirection = player.calculateDirectionToTarget(
+        //                         remotePlayer.xCurrent, 
+        //                         remotePlayer.yCurrent
+        //                     );
+                            
+        //                     // Make local player face the remote player
+        //                     player.faceDirection(newDirection);
+                            
+        //                     // Send the direction change to network
+        //                     if (networkManager != null && networkManager.isConnected()) {
+        //                         networkManager.sendMoveMessage(
+        //                             player.xCurrent, 
+        //                             player.yCurrent, 
+        //                             player.direction.toString(), 
+        //                             false
+        //                         );
+        //                     }
+                            
+        //                     // Toggle remote player's profile
+        //                     remoteProfile.toggleProfile(remotePlayer);
+        //                     displayProfile = false; // Hide own profile if showing
+                            
+        //                     System.out.println("Clicked on remote player: " + remotePlayer.name);
+        //                     return;
+        //                 }
+        //             }
+        //         }
                 
-        //         // Check if click is NOT on sprite
-        //         boolean clickedOnSprite = (mouseX >= hitboxX && 
-        //                                   mouseX <= hitboxX + hitboxWidth &&
-        //                                   mouseY >= hitboxY && 
-        //                                   mouseY <= hitboxY + hitboxHeight);
-
-        //         if (!clickedOnSprite) {
-        //             // Click was on a tile, not on sprite - MOVE!
+        //         // ✨ THIRD: If clicked on empty tile (not on any sprite)
+        //         if (!clickedOnRemotePlayer) {
+        //             Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
+        //             mouseOverTileX = tilePoint.x;
+        //             mouseOverTileY = tilePoint.y;
+                    
+        //             // Check if click is on a valid tile for movement
         //             if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && 
         //                 mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
                         
@@ -202,47 +236,74 @@ public class GamePanel extends JPanel implements Runnable {
         //                     hoveredTileY = mouseOverTileY;
         //                     System.out.println("Moving to tile: " + hoveredTileX + ", " + hoveredTileY);
                             
-        //                     // Use pathfinding to move (if you have it)
+        //                     // Move player
         //                     player.moveTo(hoveredTileX, hoveredTileY);
-                    
+                            
         //                     previousTileX = hoveredTileX;
         //                     previousTileY = hoveredTileY;
+                            
+        //                     // Hide both profiles when moving
+        //                     displayProfile = false;
+        //                     remoteProfile.hideProfile();
         //                 }
         //             }
         //         }
         //     }
         // });
-        // Mouse click handler - UPDATED WITH REMOTE PLAYER INTERACTION
+        // REPLACE your existing addMouseListener and addMouseMotionListener with these:
+
+        // Mouse listener for drag functionality
         addMouseListener(new MouseAdapter() {
             @Override
+            public void mousePressed(MouseEvent e) {
+                // Right-click or middle-click to drag (left-click reserved for movement/interaction)
+                if (e.getButton() == MouseEvent.BUTTON1) {
+                    isDragging = true;
+                    dragStartX = e.getX();
+                    dragStartY = e.getY();
+                    originalXOffset = tile_manager.xOffset;
+                    originalYOffset = tile_manager.yOffset;
+                    setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+                }
+            }
+            
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (e.getButton() == MouseEvent.BUTTON1) {
+                    isDragging = false;
+                    setCursor(Cursor.getDefaultCursor());
+                }
+            }
+            
+            @Override
             public void mouseClicked(MouseEvent e) {
+                // Only handle left-click for interactions when NOT dragging
+                if (e.getButton() != MouseEvent.BUTTON1) return;
+                
                 int mouseX = e.getX();
                 int mouseY = e.getY();
                 
-                // ✨ FIRST: Check if clicked on LOCAL player (show own profile)
+                // Check if clicked on LOCAL player (show own profile)
                 if (player.contains(mouseX, mouseY)) {
                     displayProfile = !displayProfile;
-                    remoteProfile.hideProfile(); // Hide remote profile if showing
+                    remoteProfile.hideProfile();
                     return;
                 }
                 
-                // ✨ SECOND: Check if clicked on any REMOTE player
+                // Check if clicked on any REMOTE player
                 boolean clickedOnRemotePlayer = false;
                 synchronized (remotePlayers) {
                     for (RemotePlayer remotePlayer : remotePlayers.values()) {
                         if (remotePlayer.contains(mouseX, mouseY)) {
                             clickedOnRemotePlayer = true;
                             
-                            // Calculate direction to face the remote player
                             Direction newDirection = player.calculateDirectionToTarget(
                                 remotePlayer.xCurrent, 
                                 remotePlayer.yCurrent
                             );
                             
-                            // Make local player face the remote player
                             player.faceDirection(newDirection);
                             
-                            // Send the direction change to network
                             if (networkManager != null && networkManager.isConnected()) {
                                 networkManager.sendMoveMessage(
                                     player.xCurrent, 
@@ -252,9 +313,8 @@ public class GamePanel extends JPanel implements Runnable {
                                 );
                             }
                             
-                            // Toggle remote player's profile
                             remoteProfile.toggleProfile(remotePlayer);
-                            displayProfile = false; // Hide own profile if showing
+                            displayProfile = false;
                             
                             System.out.println("Clicked on remote player: " + remotePlayer.name);
                             return;
@@ -262,13 +322,12 @@ public class GamePanel extends JPanel implements Runnable {
                     }
                 }
                 
-                // ✨ THIRD: If clicked on empty tile (not on any sprite)
+                // If clicked on empty tile (not on any sprite)
                 if (!clickedOnRemotePlayer) {
                     Point tilePoint = calculateTileFromMouse(mouseX, mouseY);
                     mouseOverTileX = tilePoint.x;
                     mouseOverTileY = tilePoint.y;
                     
-                    // Check if click is on a valid tile for movement
                     if (mouseOverTileX >= 0 && mouseOverTileY >= 0 && 
                         mouseOverTileX < maxWorldCol && mouseOverTileY < maxWorldRow) {
                         
@@ -279,13 +338,11 @@ public class GamePanel extends JPanel implements Runnable {
                             hoveredTileY = mouseOverTileY;
                             System.out.println("Moving to tile: " + hoveredTileX + ", " + hoveredTileY);
                             
-                            // Move player
                             player.moveTo(hoveredTileX, hoveredTileY);
                             
                             previousTileX = hoveredTileX;
                             previousTileY = hoveredTileY;
                             
-                            // Hide both profiles when moving
                             displayProfile = false;
                             remoteProfile.hideProfile();
                         }
@@ -294,14 +351,47 @@ public class GamePanel extends JPanel implements Runnable {
             }
         });
 
-        // Profile display on sprite click
-        // addMouseListener(new MouseAdapter() {
-        //     public void mouseClicked(java.awt.event.MouseEvent e){
-        //         if (player.contains(e.getX(), e.getY())) {
-        //             displayProfile = !displayProfile;
-        //         }
-        //     }
-        // });
+        // Keep your existing mouse_adapter for hover functionality
+        this.addMouseMotionListener(mouse_adapter);
+
+        // ADD NEW: Mouse motion listener for dragging
+       // Mouse motion listener for dragging
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                int deltaX = e.getX() - dragStartX;
+                int deltaY = e.getY() - dragStartY;
+                
+                // Start dragging if moved more than 5 pixels (prevents accidental drags)
+                if (!isDragging && (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)) {
+                    isDragging = true;
+                    setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+                }
+                
+                if (isDragging) {
+                    tile_manager.xOffset = originalXOffset + deltaX;
+                    tile_manager.yOffset = originalYOffset + deltaY;
+                    
+                    // ✨ UPDATE: Recalculate local player sprite position
+                    player.spriteX = player.conversion_from_mapXY_to_spriteX(player.xCurrent, player.yCurrent);
+                    player.spriteY = player.conversion_from_mapXY_to_spriteY(player.xCurrent, player.yCurrent);
+                    
+                    // ✨ UPDATE: Recalculate all remote players' sprite positions
+                    synchronized (remotePlayers) {
+                        for (RemotePlayer remotePlayer : remotePlayers.values()) {
+                            remotePlayer.updateSpritePosition();
+                        }
+                    }
+                    
+                    // Optional: Uncomment to enable drag limits
+                    constrainMapOffsets();
+                    
+                    repaint();
+                }
+            }
+        });
+
+   
     }
 
     public void startGameThread() {
@@ -415,6 +505,20 @@ public class GamePanel extends JPanel implements Runnable {
                 remotePlayer.update();
             }
         }
+    }
+
+
+    // Add this method to constrain dragging within reasonable bounds
+    private void constrainMapOffsets() {
+        // Calculate map boundaries
+        int minXOffset = -worldWidth + screenWidth / 2;
+        int maxXOffset = screenWidth / 2;
+        int minYOffset = -worldHeight + screenHeight / 2;
+        int maxYOffset = screenHeight / 2;
+        
+        // Clamp offsets to boundaries
+        tile_manager.xOffset = Math.max(minXOffset, Math.min(maxXOffset, tile_manager.xOffset));
+        tile_manager.yOffset = Math.max(minYOffset, Math.min(maxYOffset, tile_manager.yOffset));
     }
 
     @Override
