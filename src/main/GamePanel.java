@@ -733,11 +733,33 @@ public class GamePanel extends JPanel implements Runnable {
     private int originalXOffset;
     private int originalYOffset;
     
+    // private Point calculateTileFromMouse(int mouseX, int mouseY) {
+    //     int adjustedX = mouseX - tile_manager.xOffset;
+    //     int adjustedY = mouseY - tile_manager.yOffset;
+    //     int mapX = (adjustedX / (tileSizeWidth / 2) + adjustedY / (tileSizeHeight / 2)) / 2;
+    //     int mapY = (adjustedY / (tileSizeHeight / 2) - adjustedX / (tileSizeWidth / 2)) / 2;
+    //     return new Point(mapX, mapY);
+    // }
+
     private Point calculateTileFromMouse(int mouseX, int mouseY) {
+        // Adjust for tile offset
         int adjustedX = mouseX - tile_manager.xOffset;
         int adjustedY = mouseY - tile_manager.yOffset;
-        int mapX = (adjustedX / (tileSizeWidth / 2) + adjustedY / (tileSizeHeight / 2)) / 2;
-        int mapY = (adjustedY / (tileSizeHeight / 2) - adjustedX / (tileSizeWidth / 2)) / 2;
+        
+        // ✨ CORRECT ISOMETRIC FORMULA:
+        // For isometric tiles, the reverse transformation is:
+        // mapX = (adjustedX / tileWidth + adjustedY / tileHeight)
+        // mapY = (adjustedY / tileHeight - adjustedX / tileWidth)
+        
+        float isoX = (float) adjustedX / (tileSizeWidth / 2);
+        float isoY = (float) adjustedY / (tileSizeHeight / 2);
+        
+        int mapX = (int) Math.floor((isoX + isoY) / 2);
+        int mapY = (int) Math.floor((isoY - isoX) / 2);
+        
+        // Debug output
+        System.out.println("Mouse: (" + mouseX + ", " + mouseY + ") → Tile: (" + mapX + ", " + mapY + ")");
+        
         return new Point(mapX, mapY);
     }
 
