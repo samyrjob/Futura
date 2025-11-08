@@ -59,14 +59,7 @@ public class HandleMouseHover {
                     int tileCenterX = (mapX - mapY) * (gp.tileSizeWidth / 2) + gp.tile_manager.xOffset + (gp.tileSizeWidth / 2);
                     int tileCenterY = (mapX + mapY) * (gp.tileSizeHeight / 2) + gp.tile_manager.yOffset + (gp.tileSizeHeight / 2);
 
-                    // Draw the player image and tile
-//                    g2d.drawImage(tile_manager.tile[1].image, tileCenterX, tileCenterY, tileSizeWidth, tileSizeHeight, null);
-//
-//                    gp.coordinate_playerX_drawn = tileCenterX - gp.tileSizeWidth;
-//                    gp.coordinate_playerY_drawn = tileCenterY - 3 * gp.tileSizeHeight;
-
-//                    player.draw_player(g2d, tileCenterX - tileSizeWidth, tileCenterY - 3 * tileSizeHeight);
-//                    System.out.println("tilecenterX and tilecenterY : " + tileCenterX + " ,  " + tileCenterY);
+     
                 }
             }
         }
