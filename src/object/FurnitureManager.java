@@ -31,9 +31,10 @@ public class FurnitureManager {
         });
     }
     
-    public void draw(Graphics2D g2d) {
-    System.out.println("=== DRAW CALL ===");
-    System.out.println("Placed furniture count: " + placedFurniture.size());
+public void draw(Graphics2D g2d) {
+    //! debug prints for the array placedFurniture
+    // System.out.println("=== DRAW CALL ===");
+    // System.out.println("Placed furniture count: " + placedFurniture.size());
     
     placedFurniture.sort((f1, f2) -> {
         int pos1 = f1.mapX + f1.mapY;
@@ -42,20 +43,35 @@ public class FurnitureManager {
     });
 
     for (Furniture furniture : placedFurniture) {
-        System.out.println("Processing furniture: " + furniture);
-        System.out.println(" - placed: " + furniture.placed);
-        System.out.println(" - image: " + furniture.image);
-        System.out.println(" - mapX: " + furniture.mapX + ", mapY: " + furniture.mapY);
-        
         if (furniture.placed && furniture.image != null) {
-            int isoX = conversion_from_mapXY_to_isoX(furniture.mapX, furniture.mapY);
-            int isoY = conversion_from_mapXY_to_isoY(furniture.mapX, furniture.mapY);
-            System.out.println(" - Drawing at iso coordinates: " + isoX + ", " + isoY);
             
-            // Your actual drawing code here
-            g2d.drawImage(furniture.image, isoX, isoY, null);
-        } else {
-            System.out.println(" - SKIPPING: placed=" + furniture.placed + ", image=" + furniture.image);
+            // ✨ STEP 1: Calculate the CENTER of the tile
+            int tileCenterX = (furniture.mapX - furniture.mapY) * (gp.tileSizeWidth / 2) 
+                            + gp.tile_manager.xOffset 
+                            + (gp.tileSizeWidth / 2);
+            
+            int tileCenterY = (furniture.mapX + furniture.mapY) * (gp.tileSizeHeight / 2) 
+                            + gp.tile_manager.yOffset 
+                            + (gp.tileSizeHeight / 2);
+            
+            // ✨ STEP 2: Use ORIGINAL image size (no scaling!)
+            int imageWidth = furniture.image.getWidth();
+            int imageHeight = furniture.image.getHeight();
+            
+            // ✨ STEP 3: Center furniture horizontally on the tile
+            int drawX = tileCenterX - (imageWidth / 2);
+            
+            // ✨ STEP 4: Position furniture vertically (Habbo style - sits on tile)
+            int drawY = tileCenterY - imageHeight + (gp.tileSizeHeight / 2);
+            
+            //! print lines for furniture objects
+            // System.out.println("Drawing " + furniture.name + ":");
+            // System.out.println("  Original size: " + imageWidth + "x" + imageHeight);
+            // System.out.println("  Tile center: (" + tileCenterX + ", " + tileCenterY + ")");
+            // System.out.println("  Draw position: (" + drawX + ", " + drawY + ")");
+            
+            // ✨ STEP 5: Draw at original size (NO width/height parameters = no scaling!)
+            g2d.drawImage(furniture.image, drawX, drawY, null);
         }
     }
 }
