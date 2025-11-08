@@ -707,6 +707,7 @@ public class GamePanel extends JPanel implements Runnable {
     RemoteProfile remoteProfile;
     Boolean displayProfile = false;
 
+    //! pause Sound
     Sound sound = new Sound();
     Sound se = new Sound();
 
@@ -978,7 +979,8 @@ public class GamePanel extends JPanel implements Runnable {
     }
 
     public void setupGame(){
-        playSong(0);
+        //! pause the song please
+        // playSong(0);
         connectToServer();
     }
     
@@ -1233,11 +1235,13 @@ public class GamePanel extends JPanel implements Runnable {
         g2d.dispose();
     }
 
-    public void playSong(int i){
-        sound.setFile(i);
-        sound.play();
-        sound.loop();
-    }
+
+    //! pause songs please
+    // public void playSong(int i){
+    //     sound.setFile(i);
+    //     sound.play();
+    //     sound.loop();
+    // }
 
     public void stopSong (){
         sound.stop();

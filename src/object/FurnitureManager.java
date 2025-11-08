@@ -32,28 +32,33 @@ public class FurnitureManager {
     }
     
     public void draw(Graphics2D g2d) {
-        // Draw furniture in order (back to front based on mapY + mapX for proper layering)
-        placedFurniture.sort((f1, f2) -> {
-            int pos1 = f1.mapX + f1.mapY;
-            int pos2 = f2.mapX + f2.mapY;
-            return Integer.compare(pos1, pos2);
-        });
+    System.out.println("=== DRAW CALL ===");
+    System.out.println("Placed furniture count: " + placedFurniture.size());
+    
+    placedFurniture.sort((f1, f2) -> {
+        int pos1 = f1.mapX + f1.mapY;
+        int pos2 = f2.mapX + f2.mapY;
+        return Integer.compare(pos1, pos2);
+    });
+
+    for (Furniture furniture : placedFurniture) {
+        System.out.println("Processing furniture: " + furniture);
+        System.out.println(" - placed: " + furniture.placed);
+        System.out.println(" - image: " + furniture.image);
+        System.out.println(" - mapX: " + furniture.mapX + ", mapY: " + furniture.mapY);
         
-        for (Furniture furniture : placedFurniture) {
-            if (furniture.placed && furniture.image != null) {
-                // Calculate isometric position
-                int isoX = conversion_from_mapXY_to_isoX(furniture.mapX, furniture.mapY);
-                int isoY = conversion_from_mapXY_to_isoY(furniture.mapX, furniture.mapY);
-                
-                // Draw furniture at calculated position
-                int drawWidth = furniture.tileWidth * gp.tileSizeWidth;
-                int drawHeight = furniture.image.getHeight() * (drawWidth / furniture.image.getWidth());
-                
-                g2d.drawImage(furniture.image, isoX, isoY - drawHeight + gp.tileSizeHeight, 
-                             drawWidth, drawHeight, null);
-            }
+        if (furniture.placed && furniture.image != null) {
+            int isoX = conversion_from_mapXY_to_isoX(furniture.mapX, furniture.mapY);
+            int isoY = conversion_from_mapXY_to_isoY(furniture.mapX, furniture.mapY);
+            System.out.println(" - Drawing at iso coordinates: " + isoX + ", " + isoY);
+            
+            // Your actual drawing code here
+            g2d.drawImage(furniture.image, isoX, isoY, null);
+        } else {
+            System.out.println(" - SKIPPING: placed=" + furniture.placed + ", image=" + furniture.image);
         }
     }
+}
     
     private int conversion_from_mapXY_to_isoX(int mapX, int mapY) {
         return (mapX - mapY) * (gp.tileSizeWidth / 2) + gp.tile_manager.xOffset;
