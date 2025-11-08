@@ -42,6 +42,9 @@ public class InventoryWindow {
     // Dragging window
     private boolean draggingWindow = false;
     private int dragOffsetX, dragOffsetY;
+
+    // Add this field at the top of InventoryWindow
+    private boolean hoverCloseButton = false;
     
     public InventoryWindow(GamePanel gp) {
         this.gp = gp;
@@ -76,6 +79,25 @@ public class InventoryWindow {
     public boolean isPlacementMode() {
         return placementMode;
     }
+
+
+
+    // Add these methods to track mouse movement (call from your GamePanel MouseMotionListener)
+    public void handleMouseMove(int mouseX, int mouseY) {
+        if (!visible) return;
+
+        int closeX = windowX + windowWidth - 30;
+        int closeY = windowY + 10;
+        int closeW = 20;
+        int closeH = 20;
+
+        hoverCloseButton = mouseX >= closeX && mouseX <= closeX + closeW &&
+                        mouseY >= closeY && mouseY <= closeY + closeH;
+        
+       
+
+    }
+
     
     public void handleClick(int mouseX, int mouseY) {
         if (!visible) return;
@@ -198,9 +220,11 @@ public class InventoryWindow {
         g2d.setFont(new Font("Arial", Font.BOLD, 18));
         g2d.drawString("Inventory", windowX + 15, windowY + 27);
         
-        // Draw close button
-        g2d.setColor(Color.WHITE);
+        
+        // Draw close button with hover effect
+        g2d.setColor(hoverCloseButton ? Color.RED : Color.WHITE);
         g2d.fillOval(windowX + windowWidth - 30, windowY + 10, 20, 20);
+
         g2d.setColor(new Color(0, 102, 204));
         g2d.setFont(new Font("Arial", Font.BOLD, 14));
         g2d.drawString("X", windowX + windowWidth - 24, windowY + 24);
