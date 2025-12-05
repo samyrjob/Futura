@@ -124,6 +124,8 @@ public class RemotePlayer extends Entity {
         return (mapX + mapY) * (gp.tileSizeHeight / 2) + gp.tile_manager.yOffset + (gp.tileSizeHeight / 2);
     }
     
+
+    // update its current sprite + sprite position
     public void update() {
         if (in_movement) {
             SpriteCounter++;

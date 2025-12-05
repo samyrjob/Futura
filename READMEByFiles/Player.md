@@ -3,13 +3,13 @@
 > **Complete guide to the Player character system in our Habbo Hotel-style multiplayer game**
 
 ## 📂 File Location
-[`src/Entity/Player.java`](src/Entity/Player.java)
+[`../src/Entity/Player.java`](../src/Entity/Player.java)
 
 ---
 
 ## 🔑 Key Components
 
-### 1. **Basic Properties** ([Lines 19-38](src/Entity/Player.java#L19-L38))
+### 1. **Basic Properties** ([Lines 19-38](../src/Entity/Player.java#L19-L38))
 
 ```java
 public String name;           // Player's username
@@ -23,14 +23,14 @@ public boolean in_movement;    // Are we moving right now?
 
 ---
 
-### 2. **Sprite System** ([Lines 85-112](src/Entity/Player.java#L85-L112))
+### 2. **Sprite System** ([Lines 85-112](../src/Entity/Player.java#L85-L112))
 
 The player has **multiple sprites** for different directions and animation states:
 
 - **8 Directions**: Front, Back, Left, Right, and 4 diagonals
 - **3 States per direction**: Standing, Walking Frame 1, Walking Frame 2
 
-**Loading**: See [`loadPlayerImage()`](src/Entity/Player.java#L85-L112)
+**Loading**: See [`loadPlayerImage()`](../src/Entity/Player.java#L85-L112)
 
 **Example sprites**:
 - `sprite-front.png` - Standing still facing camera
@@ -39,7 +39,7 @@ The player has **multiple sprites** for different directions and animation state
 
 ---
 
-### 3. **Pathfinding System** ([Lines 25-29](src/Entity/Player.java#L25-L29), [157-167](src/Entity/Player.java#L157-L167))
+### 3. **Pathfinding System** ([Lines 25-29](../src/Entity/Player.java#L25-L29), [157-167](../src/Entity/Player.java#L157-L167))
 
 ```java
 private PathFinder pathFinder;        // The brain that finds paths
@@ -51,7 +51,7 @@ private int pathIndex = 0;            // Which step we're on
 1. You **click** somewhere on the map
 2. **PathFinder** uses **A* algorithm** to find the shortest path
 3. Player walks **tile by tile** along that path
-4. Each step takes **250ms** ([`STEP_DURATION`](src/Entity/Player.java#L28))
+4. Each step takes **250ms** ([`STEP_DURATION`](../src/Entity/Player.java#L28))
 
 **Example**:
 ```
@@ -61,13 +61,13 @@ Player walks one tile every 250ms
 ```
 
 **Key Methods**:
-- [`moveTo(int targetCol, int targetRow)`](src/Entity/Player.java#L157-L167) - Initiates pathfinding to destination
-- [`update()`](src/Entity/Player.java#L169-L206) - Executes movement along the path
-- [`determineDirection()`](src/Entity/Player.java#L208-L234) - Calculates which way to face
+- [`moveTo(int targetCol, int targetRow)`](../src/Entity/Player.java#L157-L167) - Initiates pathfinding to destination
+- [`update()`](../src/Entity/Player.java#L169-L206) - Executes movement along the path
+- [`determineDirection()`](../src/Entity/Player.java#L208-L234) - Calculates which way to face
 
 ---
 
-### 4. **Coordinate Conversion** ([Lines 114-128](src/Entity/Player.java#L114-L128))
+### 4. **Coordinate Conversion** ([Lines 114-128](../src/Entity/Player.java#L114-L128))
 
 **The Challenge**: Converting between grid coordinates and screen pixels in isometric view
 
@@ -83,14 +83,14 @@ public int conversion_from_mapXY_to_spriteY(int mapX, int mapY)
 - Isometric view is tilted 45° so requires special math!
 
 **Helper Methods**:
-- [`conversion_from_mapXY_to_tilecenterX()`](src/Entity/Player.java#L114-L116) - Get tile center X
-- [`conversion_from_mapXY_to_tilecenterY()`](src/Entity/Player.java#L118-L120) - Get tile center Y
-- [`conversion_from_mapXY_to_spriteX()`](src/Entity/Player.java#L122-L124) - Get sprite draw X
-- [`conversion_from_mapXY_to_spriteY()`](src/Entity/Player.java#L126-L128) - Get sprite draw Y
+- [`conversion_from_mapXY_to_tilecenterX()`](../src/Entity/Player.java#L114-L116) - Get tile center X
+- [`conversion_from_mapXY_to_tilecenterY()`](../src/Entity/Player.java#L118-L120) - Get tile center Y
+- [`conversion_from_mapXY_to_spriteX()`](../src/Entity/Player.java#L122-L124) - Get sprite draw X
+- [`conversion_from_mapXY_to_spriteY()`](../src/Entity/Player.java#L126-L128) - Get sprite draw Y
 
 ---
 
-### 5. **Game Loop Update** ([Lines 169-206](src/Entity/Player.java#L169-L206))
+### 5. **Game Loop Update** ([Lines 169-206](../src/Entity/Player.java#L169-L206))
 
 Called **60 times per second** (every frame):
 
@@ -113,7 +113,7 @@ public void update() {
 
 ---
 
-### 6. **Direction System** ([Lines 208-234](src/Entity/Player.java#L208-L234))
+### 6. **Direction System** ([Lines 208-234](../src/Entity/Player.java#L208-L234))
 
 **8 Possible Directions**:
 
@@ -132,13 +132,13 @@ RIGHT (↗️)
 ```
 
 **Methods**:
-- [`determineDirection()`](src/Entity/Player.java#L208-L234) - Calculate direction from movement vector
-- [`calculateDirectionToTarget()`](src/Entity/Player.java#L355-L404) - Face toward a target position
-- [`faceDirection()`](src/Entity/Player.java#L408-L431) - Change facing direction without moving
+- [`determineDirection()`](../src/Entity/Player.java#L208-L234) - Calculate direction from movement vector
+- [`calculateDirectionToTarget()`](../src/Entity/Player.java#L355-L404) - Face toward a target position
+- [`faceDirection()`](../src/Entity/Player.java#L408-L431) - Change facing direction without moving
 
 ---
 
-### 7. **Typing Indicator** ([Lines 32-35](src/Entity/Player.java#L32-L35), [255-274](src/Entity/Player.java#L255-L274))
+### 7. **Typing Indicator** ([Lines 32-35](../src/Entity/Player.java#L32-L35), [255-274](../src/Entity/Player.java#L255-L274))
 
 The **"..." bubble** that appears when typing! 💬
 
@@ -149,8 +149,8 @@ private static final long TYPING_TIMEOUT = 3000;    // Auto-hide after 3s
 ```
 
 **How it works**:
-1. Player starts typing → [`setTyping(true)`](src/Entity/Player.java#L248-L252) is called
-2. Bubble appears above head ([`drawTypingBubble()`](src/Entity/Player.java#L255-L274))
+1. Player starts typing → [`setTyping(true)`](../src/Entity/Player.java#L248-L252) is called
+2. Bubble appears above head ([`drawTypingBubble()`](../src/Entity/Player.java#L255-L274))
 3. After 3 seconds of no typing → bubble disappears automatically
 4. Visual: White speech bubble with "..." text
 
@@ -158,7 +158,7 @@ private static final long TYPING_TIMEOUT = 3000;    // Auto-hide after 3s
 
 ---
 
-### 8. **Network Synchronization** ([Lines 236-252](src/Entity/Player.java#L236-L252))
+### 8. **Network Synchronization** ([Lines 236-252](../src/Entity/Player.java#L236-L252))
 
 ```java
 private void sendNetworkUpdate() {
@@ -175,7 +175,7 @@ private void sendNetworkUpdate() {
 
 **Flow**:
 1. Detect if position/direction changed
-2. Send update to server via [`NetworkManager`](src/network/NetworkManager.java)
+2. Send update to server via [`NetworkManager`](../src/network/NetworkManager.java)
 3. Server broadcasts to all other players
 4. They see you move on their screens!
 
@@ -183,7 +183,7 @@ private void sendNetworkUpdate() {
 
 ---
 
-### 9. **Rendering** ([Lines 281-318](src/Entity/Player.java#L281-L318))
+### 9. **Rendering** ([Lines 281-318](../src/Entity/Player.java#L281-L318))
 
 ```java
 public void draw_player(Graphics2D g2d) {
@@ -206,14 +206,14 @@ public void draw_player(Graphics2D g2d) {
 
 ### **Example: Player Clicks a Tile**
 
-1. **Click detected** → [`moveTo(5, 3)`](src/Entity/Player.java#L157-L167) called
+1. **Click detected** → [`moveTo(5, 3)`](../src/Entity/Player.java#L157-L167) called
 2. **Pathfinding** → `PathFinder` calculates: (0,0)→(1,1)→(2,2)→(3,3)→(4,4)→(5,3)
 3. **Movement starts** → `in_movement = true`, `currentPath` stored
-4. **Every frame** → [`update()`](src/Entity/Player.java#L169-L206) checks if 250ms passed
+4. **Every frame** → [`update()`](../src/Entity/Player.java#L169-L206) checks if 250ms passed
 5. **Every 250ms** → Move to next tile, animate sprite
-6. **Direction** → [`determineDirection()`](src/Entity/Player.java#L208-L234) calculates facing
-7. **Rendering** → [`draw_player()`](src/Entity/Player.java#L281-L318) shows animation
-8. **Networking** → [`sendNetworkUpdate()`](src/Entity/Player.java#L236-L252) broadcasts position
+6. **Direction** → [`determineDirection()`](../src/Entity/Player.java#L208-L234) calculates facing
+7. **Rendering** → [`draw_player()`](../src/Entity/Player.java#L281-L318) shows animation
+8. **Networking** → [`sendNetworkUpdate()`](../src/Entity/Player.java#L236-L252) broadcasts position
 9. **Other players** → Receive update and see you walking!
 
 ---
@@ -222,18 +222,18 @@ public void draw_player(Graphics2D g2d) {
 
 | Method | Lines | Purpose |
 |--------|-------|---------|
-| [`Player()`](src/Entity/Player.java#L59-L82) | 59-82 | Constructor - initializes player |
-| [`loadPlayerImage()`](src/Entity/Player.java#L85-L112) | 85-112 | Load all sprite images |
-| [`moveTo()`](src/Entity/Player.java#L157-L167) | 157-167 | Start pathfinding to destination |
-| [`update()`](src/Entity/Player.java#L169-L206) | 169-206 | Game loop - handle movement |
-| [`determineDirection()`](src/Entity/Player.java#L208-L234) | 208-234 | Calculate direction from movement |
-| [`sendNetworkUpdate()`](src/Entity/Player.java#L236-L252) | 236-252 | Sync with other players |
-| [`setTyping()`](src/Entity/Player.java#L248-L252) | 248-252 | Show/hide typing bubble |
-| [`drawTypingBubble()`](src/Entity/Player.java#L255-L274) | 255-274 | Render typing indicator |
-| [`draw_player()`](src/Entity/Player.java#L281-L318) | 281-318 | Render player sprite |
-| [`contains()`](src/Entity/Player.java#L321-L337) | 321-337 | Check if mouse is over player |
-| [`calculateDirectionToTarget()`](src/Entity/Player.java#L355-L404) | 355-404 | Face toward target |
-| [`faceDirection()`](src/Entity/Player.java#L408-L431) | 408-431 | Change facing direction |
+| [`Player()`](../src/Entity/Player.java#L59-L82) | 59-82 | Constructor - initializes player |
+| [`loadPlayerImage()`](../src/Entity/Player.java#L85-L112) | 85-112 | Load all sprite images |
+| [`moveTo()`](../src/Entity/Player.java#L157-L167) | 157-167 | Start pathfinding to destination |
+| [`update()`](../src/Entity/Player.java#L169-L206) | 169-206 | Game loop - handle movement |
+| [`determineDirection()`](../src/Entity/Player.java#L208-L234) | 208-234 | Calculate direction from movement |
+| [`sendNetworkUpdate()`](../src/Entity/Player.java#L236-L252) | 236-252 | Sync with other players |
+| [`setTyping()`](../src/Entity/Player.java#L248-L252) | 248-252 | Show/hide typing bubble |
+| [`drawTypingBubble()`](../src/Entity/Player.java#L255-L274) | 255-274 | Render typing indicator |
+| [`draw_player()`](../src/Entity/Player.java#L281-L318) | 281-318 | Render player sprite |
+| [`contains()`](../src/Entity/Player.java#L321-L337) | 321-337 | Check if mouse is over player |
+| [`calculateDirectionToTarget()`](../src/Entity/Player.java#L355-L404) | 355-404 | Face toward target |
+| [`faceDirection()`](../src/Entity/Player.java#L408-L431) | 408-431 | Change facing direction |
 
 ---
 
@@ -244,25 +244,25 @@ public void draw_player(Graphics2D g2d) {
 - **Fix**: Check game loop timing and verify `STEP_DURATION = 250ms`
 
 ### **Player faces wrong direction**
-- **Cause**: [`determineDirection()`](src/Entity/Player.java#L208-L234) math incorrect
+- **Cause**: [`determineDirection()`](../src/Entity/Player.java#L208-L234) math incorrect
 - **Fix**: Debug the deltaX/deltaY calculations
 
 ### **Other players don't see movement**
-- **Cause**: [`networkManager`](src/Entity/Player.java#L16) is null or not connected
+- **Cause**: [`networkManager`](../src/Entity/Player.java#L16) is null or not connected
 - **Fix**: Ensure network connection established before gameplay
 
 ### **Sprite doesn't animate**
 - **Cause**: `SpriteNum` not toggling or images not loaded
-- **Fix**: Check [`loadPlayerImage()`](src/Entity/Player.java#L85-L112) for errors
+- **Fix**: Check [`loadPlayerImage()`](../src/Entity/Player.java#L85-L112) for errors
 
 ---
 
 ## 📚 Related Classes
 
-- [`PathFinder.java`](src/pathfinding/PathFinder.java) - A* pathfinding algorithm
-- [`NetworkManager.java`](src/network/NetworkManager.java) - Server communication
-- [`GamePanel.java`](src/main/GamePanel.java) - Game loop and rendering
-- [`Entity.java`](src/Entity/Entity.java) - Base entity class
+- [`PathFinder.java`](../src/pathfinding/PathFinder.java) - A* pathfinding algorithm
+- [`NetworkManager.java`](../src/network/NetworkManager.java) - Server communication
+- [`GamePanel.java`](../src/main/GamePanel.java) - Game loop and rendering
+- [`Entity.java`](../src/Entity/Entity.java) - Base entity class
 
 ---
 
@@ -298,4 +298,4 @@ Part of the Habbo Hotel-style multiplayer game project.
 
 ---
 
-**Questions?** Check the inline code comments in [`Player.java`](src/Entity/Player.java) or reach out to the dev team!
+**Questions?** Check the inline code comments in [`Player.java`](../src/Entity/Player.java) or reach out to the dev team!
