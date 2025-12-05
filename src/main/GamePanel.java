@@ -5,7 +5,7 @@ import Entity.RemotePlayer;
 import Entity.Entity.Direction;
 import Entity.Entity.Gender;
 import message.ChatBox;
-import Entity.Player.Message;
+
 import message.Profile;
 import message.RemoteProfile;
 import message.InventoryWindow;
@@ -15,11 +15,8 @@ import network.NetworkManager;
 import tile.TileManager;
 import object.FurnitureManager;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionAdapter;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.swing.*;
@@ -321,8 +318,8 @@ public class GamePanel extends JPanel implements Runnable {
                     tile_manager.xOffset = originalXOffset + deltaX;
                     tile_manager.yOffset = originalYOffset + deltaY;
                     
-                    player.spriteX = player.conversion_from_mapXY_to_spriteX(player.movement.xCurrent, player.movement.yCurrent);
-                    player.spriteY = player.conversion_from_mapXY_to_spriteY(player.movement.xCurrent, player.movement.yCurrent);
+                    // player.spriteX = player.conversion_from_mapXY_to_spriteX(player.movement.xCurrent, player.movement.yCurrent);
+                    // player.spriteY = player.conversion_from_mapXY_to_spriteY(player.movement.xCurrent, player.movement.yCurrent);
                     
                     synchronized (remotePlayers) {
                         for (RemotePlayer remotePlayer : remotePlayers.values()) {
@@ -364,8 +361,8 @@ public class GamePanel extends JPanel implements Runnable {
             networkManager.sendJoinMessage(
                 player.name,
                 player.gender.toString(),
-                player.xCurrent,
-                player.yCurrent,
+                player.movement.xCurrent,
+                player.movement.yCurrent,
                 player.direction.toString()
             );
             System.out.println("Connected to multiplayer server");
@@ -472,7 +469,7 @@ public class GamePanel extends JPanel implements Runnable {
         handleMouseHover.drawPolygon(mouseX, mouseY, g);
 
         // PAINT LOCAL PLAYER
-        player.draw_player(g2d);
+        player.draw(g2d);
         
         // PAINT REMOTE PLAYERS
         synchronized (remotePlayers) {
