@@ -369,12 +369,7 @@ public class Player extends Entity {
         drawTypingBubble(g2d);
     }
 
-    // public boolean contains(int mouseX, int mouseY) {
-    //     return mouseX >= spriteX &&
-    //            mouseX <= spriteX + currentSprite.getWidth() &&
-    //            mouseY >= spriteY &&
-    //            mouseY <= spriteY + currentSprite.getHeight();
-    // }
+
     public boolean contains(int mouseX, int mouseY) {
     // Use the SAME hitbox calculation as in GamePanel
     int drawnWidth = 2 * gp.tileSizeWidth;
