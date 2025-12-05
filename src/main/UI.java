@@ -5,13 +5,10 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
-import javax.swing.JButton;
-import javax.swing.JTextField;
 
-import org.w3c.dom.css.RGBColor;
 
 import object.*;
-import Entity.*;
+
 
 public class UI {
 
