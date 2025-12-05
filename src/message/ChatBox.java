@@ -2,7 +2,7 @@ package message;
 
 import javax.swing.*;
 
-import org.w3c.dom.events.MouseEvent;
+
 
 import main.GamePanel;
 import Entity.Player;
@@ -10,10 +10,7 @@ import Entity.Player.Message;
 
 import java.awt.*;
 
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseMotionAdapter;
-import java.util.ArrayList;
-import java.util.List;
+
 
 public class ChatBox{
 

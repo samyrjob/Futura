@@ -119,8 +119,8 @@ public class ServerMessageWatcher extends Thread {
                 requesterPort,
                 gamePanel.player.name,
                 gamePanel.player.gender.toString(),
-                gamePanel.player.xCurrent,
-                gamePanel.player.yCurrent,
+                gamePanel.player.movement.xCurrent,
+                gamePanel.player.movement.yCurrent,
                 gamePanel.player.direction.toString()
             );
         }
