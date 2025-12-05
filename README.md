@@ -5,6 +5,7 @@ java -cp bin main.Main "futura://open?user=Joe&gender=male"
 
 
 To launch the server:
+
 java -cp bin network.GameServer
 
 # FOR COMPILING (powershell)
@@ -21,3 +22,8 @@ powershell# Generate list of all .java files
 Get-ChildItem -Recurse -Filter *.java src | ForEach-Object { $_.FullName } | Out-File -Encoding ascii sources.txt
 # Compile using the list
 javac -d bin -cp bin @sources.txt
+
+
+
+
+
