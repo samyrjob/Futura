@@ -33,7 +33,7 @@ public class UI {
     public void draw(Graphics2D g2d){
         g2d.setColor(Color.WHITE);
         g2d.setFont(theFont);
-        g2d.drawImage(credImage, gp.originalTileSize, gp.originalTileSize, gp.originalTileSize *2 , gp.originalTileSize*2, null);
+        g2d.drawImage(credImage, GamePanel.ORIGINAL_TILE_SIZE, GamePanel.ORIGINAL_TILE_SIZE, GamePanel.ORIGINAL_TILE_SIZE *2 , GamePanel.ORIGINAL_TILE_SIZE*2, null);
         String nbCredits = gp.player.getCredits() + "";
         g2d.drawString(nbCredits, 50,47);
     }
