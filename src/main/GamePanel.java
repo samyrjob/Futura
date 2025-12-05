@@ -79,7 +79,6 @@ public class GamePanel extends JPanel implements Runnable {
     public InventoryWindow inventoryWindow;
     
     // Input handlers
-    private KeyHandler key_handler;
     private MyMouseAdapter mouse_adapter;
     private HandleMouseHover handleMouseHover;
     
@@ -172,8 +171,6 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void initializeInput() {
-        this.key_handler = new KeyHandler();
-        this.addKeyListener(key_handler);
         this.addMouseListener(mouse_adapter);
         this.addMouseMotionListener(mouse_adapter);
         
