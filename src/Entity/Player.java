@@ -303,6 +303,7 @@ public class Player extends Entity {
 
     /**
      * Draw player sprite
+     * + Draw typing bubble
      */
     public void draw_player(Graphics2D g2d){
         if (in_movement) {
@@ -365,99 +366,92 @@ public class Player extends Entity {
             g2d.drawImage(currentSprite, spriteX, spriteY, 2*gp.tileSizeWidth, 4*gp.tileSizeHeight, null);
         }
 
-        // ✨ NEW: Draw typing bubble if typing
+        // ✨ Draw typing bubble if typing
         drawTypingBubble(g2d);
     }
 
-    // public boolean contains(int mouseX, int mouseY) {
-    //     return mouseX >= spriteX &&
-    //            mouseX <= spriteX + currentSprite.getWidth() &&
-    //            mouseY >= spriteY &&
-    //            mouseY <= spriteY + currentSprite.getHeight();
-    // }
+
     public boolean contains(int mouseX, int mouseY) {
-    // Use the SAME hitbox calculation as in GamePanel
-    int drawnWidth = 2 * gp.tileSizeWidth;
-    int drawnHeight = 4 * gp.tileSizeHeight;
-    
-    // Make hitbox smaller (only character body - 40% width, 50% height)
-    int hitboxWidth = (int)(drawnWidth * 0.4);
-    int hitboxHeight = (int)(drawnHeight * 0.5);
-    
-    // Center horizontally, position at bottom
-    int hitboxX = spriteX + (drawnWidth - hitboxWidth) / 2;
-    int hitboxY = spriteY + drawnHeight - hitboxHeight;
-    
-    return (mouseX >= hitboxX && 
-            mouseX <= hitboxX + hitboxWidth &&
-            mouseY >= hitboxY && 
-            mouseY <= hitboxY + hitboxHeight);
+        // Use the SAME hitbox calculation as in GamePanel
+        int drawnWidth = 2 * gp.tileSizeWidth;
+        int drawnHeight = 4 * gp.tileSizeHeight;
+        
+        // Make hitbox smaller (only character body - 40% width, 50% height)
+        int hitboxWidth = (int)(drawnWidth * 0.4);
+        int hitboxHeight = (int)(drawnHeight * 0.5);
+        
+        // Center horizontally, position at bottom
+        int hitboxX = spriteX + (drawnWidth - hitboxWidth) / 2;
+        int hitboxY = spriteY + drawnHeight - hitboxHeight;
+        
+        return (mouseX >= hitboxX && 
+                mouseX <= hitboxX + hitboxWidth &&
+                mouseY >= hitboxY && 
+                mouseY <= hitboxY + hitboxHeight);
 }
 
 
 
-public Direction calculateDirectionToTarget(int targetX, int targetY) {
-    int deltaX = targetX - xCurrent;
-    int deltaY = targetY - yCurrent;
-    
-    // If already at the same position
-    if (deltaX == 0 && deltaY == 0) {
-        return direction; // Keep current direction
-    }
-    
-    // When on same ISO_X axis (deltaX == 0), use ISO_Y directions
-    if (deltaX == 0) {
-        return (deltaY > 0) ? Direction.ISO_Y_DOWN : Direction.ISO_Y_UP;
-    } 
-    // When on same ISO_Y axis (deltaY == 0), use ISO_X directions
-    else if (deltaY == 0) {
-        return (deltaX > 0) ? Direction.ISO_X_RIGHT : Direction.ISO_X_LEFT;
-    }
-    // ✨ DIAGONAL detection with tolerance
-    else {
-        // Calculate the ratio to see if it's close to diagonal
-        double ratio = (double) Math.abs(deltaX) / Math.abs(deltaY);
+    public Direction calculateDirectionToTarget(int targetX, int targetY) {
+        int deltaX = targetX - xCurrent;
+        int deltaY = targetY - yCurrent;
         
-        // If ratio is between 0.7 and 1.4, consider it diagonal
-        boolean isDiagonalish = (ratio >= 0.7 && ratio <= 1.4);
+        // If already at the same position
+        if (deltaX == 0 && deltaY == 0) {
+            return direction; // Keep current direction
+        }
         
-        if (isDiagonalish) {
-            // Bottom-right quadrant → DIAGONALE_DOWN
+        // When on same ISO_X axis (deltaX == 0), use ISO_Y directions
+        if (deltaX == 0) {
+            return (deltaY > 0) ? Direction.ISO_Y_DOWN : Direction.ISO_Y_UP;
+        } 
+        // When on same ISO_Y axis (deltaY == 0), use ISO_X directions
+        else if (deltaY == 0) {
+            return (deltaX > 0) ? Direction.ISO_X_RIGHT : Direction.ISO_X_LEFT;
+        }
+        // ✨ DIAGONAL detection with tolerance
+        else {
+            // Calculate the ratio to see if it's close to diagonal
+            double ratio = (double) Math.abs(deltaX) / Math.abs(deltaY);
+            
+            // If ratio is between 0.7 and 1.4, consider it diagonal
+            boolean isDiagonalish = (ratio >= 0.7 && ratio <= 1.4);
+            
+            if (isDiagonalish) {
+                // Bottom-right quadrant → DIAGONALE_DOWN
+                if (deltaX > 0 && deltaY > 0) {
+                    return Direction.DIAGONALE_DOWN;
+                }
+                // Top-left quadrant → DIAGONALE_UP
+                else if (deltaX < 0 && deltaY < 0) {
+                    return Direction.DIAGONALE_UP;
+                }
+                // Top-right quadrant → RIGHT
+                else if (deltaX > 0 && deltaY < 0) {
+                    return Direction.RIGHT;
+                }
+                // Bottom-left quadrant → LEFT
+                else if (deltaX < 0 && deltaY > 0) {
+                    return Direction.LEFT;
+                }
+            }
+            
+            // Not diagonal enough - use ISO directions based on which is larger
             if (deltaX > 0 && deltaY > 0) {
-                return Direction.DIAGONALE_DOWN;
+                // Bottom-right quadrant
+                return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.DIAGONALE_DOWN : Direction.DIAGONALE_UP;
+            } else if (deltaX > 0 && deltaY < 0) {
+                // Top-right quadrant
+                return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.RIGHT : Direction.LEFT;
+            } else if (deltaX < 0 && deltaY > 0) {
+                // Bottom-left quadrant
+                return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.LEFT: Direction.RIGHT;
+            } else {
+                // Top-left quadrant
+                return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.DIAGONALE_UP : Direction.DIAGONALE_DOWN;
             }
-            // Top-left quadrant → DIAGONALE_UP
-            else if (deltaX < 0 && deltaY < 0) {
-                return Direction.DIAGONALE_UP;
-            }
-            // Top-right quadrant → RIGHT
-            else if (deltaX > 0 && deltaY < 0) {
-                return Direction.RIGHT;
-            }
-            // Bottom-left quadrant → LEFT
-            else if (deltaX < 0 && deltaY > 0) {
-                return Direction.LEFT;
-            }
-        }
-        
-        // Not diagonal enough - use ISO directions based on which is larger
-        if (deltaX > 0 && deltaY > 0) {
-            // Bottom-right quadrant
-            return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.DIAGONALE_DOWN : Direction.DIAGONALE_UP;
-        } else if (deltaX > 0 && deltaY < 0) {
-            // Top-right quadrant
-            return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.RIGHT : Direction.LEFT;
-        } else if (deltaX < 0 && deltaY > 0) {
-            // Bottom-left quadrant
-            return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.LEFT: Direction.RIGHT;
-        } else {
-            // Top-left quadrant
-            return (Math.abs(deltaX) > Math.abs(deltaY)) ? Direction.DIAGONALE_UP : Direction.DIAGONALE_DOWN;
         }
     }
-}
-
-
 
     public void faceDirection(Direction newDirection) {
     this.direction = newDirection;
