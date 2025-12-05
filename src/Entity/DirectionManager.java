@@ -17,7 +17,7 @@ public class DirectionManager {
      * Determine direction based on movement from (x1,y1) to (x2,y2)
      * Returns null if no movement occurred
      */
-    public Entity.Direction calculateMovementDirection(int x1, int y1, int x2, int y2) {
+    public Direction calculateMovementDirection(int x1, int y1, int x2, int y2) {
         int dx = x2 - x1;
         int dy = y2 - y1;
         
@@ -28,19 +28,19 @@ public class DirectionManager {
         
         // Diagonal movements
         if (dx == -1 && dy == -1) {
-            return Entity.Direction.DIAGONALE_UP;
+            return Direction.DIAGONALE_UP;
         } else if (dx == 1 && dy == 1) {
-            return Entity.Direction.DIAGONALE_DOWN;
+            return Direction.DIAGONALE_DOWN;
         }
         // Straight movements
         else if (dx == -1 && dy == 0) {
-            return Entity.Direction.ISO_X_LEFT;
+            return Direction.ISO_X_LEFT;
         } else if (dx == 1 && dy == 0) {
-            return Entity.Direction.ISO_X_RIGHT;
+            return Direction.ISO_X_RIGHT;
         } else if (dx == 0 && dy == -1) {
-            return Entity.Direction.ISO_Y_UP;
+            return Direction.ISO_Y_UP;
         } else if (dx == 0 && dy == 1) {
-            return Entity.Direction.ISO_Y_DOWN;
+            return Direction.ISO_Y_DOWN;
         }
         // Mixed diagonal movements
         else if (dx == -1 && dy == 1) {
@@ -144,3 +144,5 @@ public class DirectionManager {
         }
     }
 }
+
+
