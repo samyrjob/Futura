@@ -122,6 +122,11 @@ public class Player extends Entity {
             isTyping
         );
     }
+
+    public void updateSpritePosition() {
+    spriteX = renderer.getSpriteX(movement.xCurrent, movement.yCurrent);
+    spriteY = renderer.getSpriteY(movement.xCurrent, movement.yCurrent);
+}
     
     public void faceDirection(Direction newDirection) {
         this.direction = newDirection;

@@ -8,7 +8,9 @@ import ui.profile.Profile;
 import ui.profile.RemoteProfile;
 import ui.hud.TileHighlighter;
 import ui.inventory.InventoryWindow;
+import ui.room.RoomNavigator;  // ✨ NEW IMPORT
 import network.NetworkManager;
+import room.RoomManager;  // ✨ NEW IMPORT
 import tile.TileManager;
 import object.FurnitureManager;
 import java.awt.event.MouseEvent;
@@ -68,12 +70,14 @@ public class GamePanel extends JPanel implements Runnable {
     public TileManager tile_manager;
     public FurnitureManager furnitureManager;
     public NetworkManager networkManager;
+    public RoomManager roomManager;  // ✨ NEW - Room system
     
     // UI Components
     // private UI ui;
     private Profile profile;
     private RemoteProfile remoteProfile;
     public InventoryWindow inventoryWindow;
+    public RoomNavigator roomNavigator;  // ✨ NEW - Room navigation UI
     
     // Input handlers
     private TileHighlighter handleMouseHover;
@@ -155,6 +159,9 @@ public class GamePanel extends JPanel implements Runnable {
         this.tile_manager = new TileManager(this);
         this.furnitureManager = new FurnitureManager(this);
         this.handleMouseHover = new TileHighlighter(this);
+        
+        // ✨ NEW - Initialize room system AFTER other managers
+        this.roomManager = new RoomManager(this);
     }
     
     private void initializeUI() {
@@ -162,6 +169,9 @@ public class GamePanel extends JPanel implements Runnable {
         this.profile = new Profile(this, player);
         this.remoteProfile = new RemoteProfile(this);
         this.inventoryWindow = new InventoryWindow(this);
+        
+        // ✨ NEW - Initialize room navigator AFTER roomManager exists
+        this.roomNavigator = new RoomNavigator(this, roomManager);
     }
     
     private void initializeInput() {
@@ -279,6 +289,9 @@ public class GamePanel extends JPanel implements Runnable {
         
         inventoryWindow.drawPlacementPreview(g2d);
         inventoryWindow.draw(g2d);
+        
+        // ✨ NEW - Draw room navigator (always last so it's on top)
+        roomNavigator.draw(g2d);
     }
     
     private void drawChatBubbles(Graphics2D g2d) {
@@ -387,6 +400,11 @@ public class GamePanel extends JPanel implements Runnable {
     public synchronized void removeRemotePlayer(String username) {
         remotePlayers.remove(username);
         System.out.println("Removed remote player: " + username);
+    }
+
+    public synchronized void removeAllRemotePlayers() {
+        remotePlayers.clear();
+        System.out.println("Cleared all remote players");
     }
     
     public synchronized void addRemotePlayerChat(String username, String text) {
@@ -535,6 +553,13 @@ public class GamePanel extends JPanel implements Runnable {
     // ═══════════════════════════════════════════════════════════
     
     private void handleMousePressed(MouseEvent e) {
+        // ✨ NEW - Check room navigator FIRST (highest priority)
+        if (roomNavigator.isVisible()) {
+            roomNavigator.handleClick(e.getX(), e.getY());
+            repaint();
+            return;
+        }
+        
         // Inventory window
         if (inventoryWindow.isVisible()) {
             inventoryWindow.handleClick(e.getX(), e.getY());
@@ -578,6 +603,12 @@ public class GamePanel extends JPanel implements Runnable {
         
         int mouseX = e.getX();
         int mouseY = e.getY();
+        
+        // ✨ NEW - Check room navigator first
+        if (roomNavigator.isVisible()) {
+            // Already handled in handleMousePressed
+            return;
+        }
         
         // Check local player
         if (player.contains(mouseX, mouseY)) {
@@ -684,9 +715,14 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void handleMouseMoved(MouseEvent e) {
-           // ADD THESE TWO LINES:
-        mouseX = e.getX();  // ← ADD THIS
-        mouseY = e.getY();  // ← ADD THIS
+        mouseX = e.getX();
+        mouseY = e.getY();
+        
+        // ✨ NEW - Update room navigator hover state
+        if (roomNavigator.isVisible()) {
+            roomNavigator.handleMouseMove(mouseX, mouseY);
+        }
+        
         if (inventoryWindow.isPlacementMode()) {
             inventoryWindow.updatePlacementPreview(e.getX(), e.getY());
             repaint();
