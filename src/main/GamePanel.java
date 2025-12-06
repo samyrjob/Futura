@@ -8,7 +8,6 @@ import ui.profile.Profile;
 import ui.profile.RemoteProfile;
 import ui.hud.TileHighlighter;
 import ui.inventory.InventoryWindow;
-import mouse.MyMouseAdapter;
 import network.NetworkManager;
 import tile.TileManager;
 import object.FurnitureManager;
@@ -77,7 +76,6 @@ public class GamePanel extends JPanel implements Runnable {
     public InventoryWindow inventoryWindow;
     
     // Input handlers
-    private MyMouseAdapter mouse_adapter;
     private TileHighlighter handleMouseHover;
     
     // Audio (paused)
@@ -150,8 +148,7 @@ public class GamePanel extends JPanel implements Runnable {
     
     private void initializePlayer(String username, String genderStr) {
         Gender gender = genderStr.equalsIgnoreCase("female") ? Gender.FEMALE : Gender.MALE;
-        this.mouse_adapter = new MyMouseAdapter(this);
-        this.player = new Player(this, mouse_adapter, username, gender);
+        this.player = new Player(this,  username, gender);
     }
     
     private void initializeManagers() {
@@ -168,8 +165,7 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void initializeInput() {
-        this.addMouseListener(mouse_adapter);
-        this.addMouseMotionListener(mouse_adapter);
+
         
         // Complex mouse listeners
         addMouseListener(new GameMouseListener());

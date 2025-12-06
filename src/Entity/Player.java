@@ -1,7 +1,6 @@
 package Entity;
 
 import main.GamePanel;
-import mouse.MyMouseAdapter;
 import network.NetworkManager;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
@@ -39,18 +38,16 @@ public class Player extends Entity {
     private long lastTypingTime = 0;
     private static final long TYPING_TIMEOUT = 3000;
     
-    // Input
-    public MyMouseAdapter myMouseAdapter;
+ 
     
     // ═══════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════
     
-    public Player(GamePanel gp, MyMouseAdapter myMouseAdapter, String name, Gender gender) {
+    public Player(GamePanel gp,  String name, Gender gender) {
         this.gp = gp;
         this.name = name;
         this.gender = gender;
-        this.myMouseAdapter = myMouseAdapter;
         this.credits = 56;
         
         // Initialize components
