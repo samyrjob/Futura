@@ -197,6 +197,11 @@ public class Player extends Entity {
         );
     }
     
+
+
+    public Direction getCurrentDirection(){
+        return this.direction;
+    }
     // ═══════════════════════════════════════════════════════════
     // MESSAGE CLASS (Inner class - related to Player)
     // ═══════════════════════════════════════════════════════════
