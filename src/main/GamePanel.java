@@ -72,7 +72,7 @@ public class GamePanel extends JPanel implements Runnable {
     public NetworkManager networkManager;
     
     // UI Components
-    private UI ui;
+    // private UI ui;
     private ChatBox chatbox;
     private Profile profile;
     private RemoteProfile remoteProfile;
@@ -163,7 +163,7 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void initializeUI() {
-        this.ui = new UI(this);
+        // this.ui = new UI(this);
         this.chatbox = new ChatBox(this, player);
         this.profile = new Profile(this, player);
         this.remoteProfile = new RemoteProfile(this);
@@ -274,7 +274,7 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void drawUI(Graphics2D g2d) {
-        ui.draw(g2d);
+        // ui.draw(g2d);
         
         if (displayProfile) {
             profile.draw(g2d);
