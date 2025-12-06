@@ -71,13 +71,15 @@ public class Main {
     /**
      * Simple data class for launch configuration
      */
-    private static class LaunchConfig {
-        final String username;
-        final String gender;
+    // private static class LaunchConfig {
+    //     final String username;
+    //     final String gender;
         
-        LaunchConfig(String username, String gender) {
-            this.username = username;
-            this.gender = gender;
-        }
-    }
+    //     LaunchConfig(String username, String gender) {
+    //         this.username = username;
+    //         this.gender = gender;
+    //     }
+    // }
+    private record LaunchConfig(String username, String gender) {}
+
 }
