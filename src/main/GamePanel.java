@@ -4,7 +4,6 @@ import Entity.Player;
 import Entity.RemotePlayer;
 import Entity.Entity.Direction;
 import Entity.Entity.Gender;
-import message.ChatBox;
 import message.Profile;
 import message.RemoteProfile;
 import message.InventoryWindow;
@@ -73,7 +72,6 @@ public class GamePanel extends JPanel implements Runnable {
     
     // UI Components
     // private UI ui;
-    private ChatBox chatbox;
     private Profile profile;
     private RemoteProfile remoteProfile;
     public InventoryWindow inventoryWindow;
@@ -164,7 +162,6 @@ public class GamePanel extends JPanel implements Runnable {
     
     private void initializeUI() {
         // this.ui = new UI(this);
-        this.chatbox = new ChatBox(this, player);
         this.profile = new Profile(this, player);
         this.remoteProfile = new RemoteProfile(this);
         this.inventoryWindow = new InventoryWindow(this);
