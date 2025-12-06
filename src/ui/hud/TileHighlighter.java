@@ -1,11 +1,11 @@
-package mouse;
+package ui.hud;
 
 
 import main.GamePanel;
 
 import java.awt.*;
 
-public class HandleMouseHover {
+public class TileHighlighter {
 
 
     GamePanel gp;
@@ -14,7 +14,7 @@ public class HandleMouseHover {
     /// TO DRAW THE POLYGON (edges on a tile)
 
 
-    public HandleMouseHover(GamePanel gp){
+    public TileHighlighter(GamePanel gp){
         this.gp = gp;
     }
 

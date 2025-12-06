@@ -6,9 +6,8 @@ import Entity.Entity.Direction;
 import Entity.Entity.Gender;
 import ui.profile.Profile;
 import ui.profile.RemoteProfile;
+import ui.hud.TileHighlighter;
 import ui.inventory.InventoryWindow;
-import mouse.HandleMouseHover;
-import mouse.MyMouseAdapter;
 import network.NetworkManager;
 import tile.TileManager;
 import object.FurnitureManager;
@@ -77,8 +76,7 @@ public class GamePanel extends JPanel implements Runnable {
     public InventoryWindow inventoryWindow;
     
     // Input handlers
-    private MyMouseAdapter mouse_adapter;
-    private HandleMouseHover handleMouseHover;
+    private TileHighlighter handleMouseHover;
     
     // Audio (paused)
     private Sound sound;
@@ -150,14 +148,13 @@ public class GamePanel extends JPanel implements Runnable {
     
     private void initializePlayer(String username, String genderStr) {
         Gender gender = genderStr.equalsIgnoreCase("female") ? Gender.FEMALE : Gender.MALE;
-        this.mouse_adapter = new MyMouseAdapter(this);
-        this.player = new Player(this, mouse_adapter, username, gender);
+        this.player = new Player(this,  username, gender);
     }
     
     private void initializeManagers() {
         this.tile_manager = new TileManager(this);
         this.furnitureManager = new FurnitureManager(this);
-        this.handleMouseHover = new HandleMouseHover(this);
+        this.handleMouseHover = new TileHighlighter(this);
     }
     
     private void initializeUI() {
@@ -168,8 +165,7 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void initializeInput() {
-        this.addMouseListener(mouse_adapter);
-        this.addMouseMotionListener(mouse_adapter);
+
         
         // Complex mouse listeners
         addMouseListener(new GameMouseListener());
@@ -688,6 +684,9 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void handleMouseMoved(MouseEvent e) {
+           // ADD THESE TWO LINES:
+        mouseX = e.getX();  // ← ADD THIS
+        mouseY = e.getY();  // ← ADD THIS
         if (inventoryWindow.isPlacementMode()) {
             inventoryWindow.updatePlacementPreview(e.getX(), e.getY());
             repaint();
