@@ -6,8 +6,8 @@ import Entity.Entity.Direction;
 import Entity.Entity.Gender;
 import ui.profile.Profile;
 import ui.profile.RemoteProfile;
+import ui.hud.TileHighlighter;
 import ui.inventory.InventoryWindow;
-import mouse.HandleMouseHover;
 import mouse.MyMouseAdapter;
 import network.NetworkManager;
 import tile.TileManager;
@@ -78,7 +78,7 @@ public class GamePanel extends JPanel implements Runnable {
     
     // Input handlers
     private MyMouseAdapter mouse_adapter;
-    private HandleMouseHover handleMouseHover;
+    private TileHighlighter handleMouseHover;
     
     // Audio (paused)
     private Sound sound;
@@ -157,7 +157,7 @@ public class GamePanel extends JPanel implements Runnable {
     private void initializeManagers() {
         this.tile_manager = new TileManager(this);
         this.furnitureManager = new FurnitureManager(this);
-        this.handleMouseHover = new HandleMouseHover(this);
+        this.handleMouseHover = new TileHighlighter(this);
     }
     
     private void initializeUI() {
