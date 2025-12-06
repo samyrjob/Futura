@@ -684,6 +684,9 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void handleMouseMoved(MouseEvent e) {
+           // ADD THESE TWO LINES:
+        mouseX = e.getX();  // ← ADD THIS
+        mouseY = e.getY();  // ← ADD THIS
         if (inventoryWindow.isPlacementMode()) {
             inventoryWindow.updatePlacementPreview(e.getX(), e.getY());
             repaint();
