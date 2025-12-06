@@ -1,0 +1,1 @@
+The UI class used to display credits on the main panel
