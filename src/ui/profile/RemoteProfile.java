@@ -1,4 +1,4 @@
-package message;
+package ui.profile;
 
 import Entity.RemotePlayer;
 import main.GamePanel;

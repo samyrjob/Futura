@@ -1,4 +1,4 @@
-package message;
+package ui.inventory;
 
 import java.awt.*;
 

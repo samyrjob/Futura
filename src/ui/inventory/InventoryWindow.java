@@ -397,7 +397,7 @@
 //     }
 // }
 
-package message;
+package ui.inventory;
 
 import main.GamePanel;
 import java.awt.*;

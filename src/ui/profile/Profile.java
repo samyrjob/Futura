@@ -1,4 +1,4 @@
-package message;
+package ui.profile;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
