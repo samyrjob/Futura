@@ -6,6 +6,7 @@ import Entity.Entity.Direction;
 import Entity.Entity.Gender;
 import ui.profile.Profile;
 import ui.profile.RemoteProfile;
+import ui.UI;
 import ui.hud.TileHighlighter;
 import ui.inventory.InventoryWindow;
 import ui.room.RoomNavigator;  // ✨ NEW IMPORT
@@ -73,7 +74,7 @@ public class GamePanel extends JPanel implements Runnable {
     public RoomManager roomManager;  // ✨ NEW - Room system
     
     // UI Components
-    // private UI ui;
+    private UI ui;
     private Profile profile;
     private RemoteProfile remoteProfile;
     public InventoryWindow inventoryWindow;
@@ -83,7 +84,7 @@ public class GamePanel extends JPanel implements Runnable {
     private TileHighlighter handleMouseHover;
     
     // Audio (paused)
-    private Sound sound;
+    public Sound sound;
     private Sound se;
     
     // ═══════════════════════════════════════════════════════════
@@ -134,6 +135,7 @@ public class GamePanel extends JPanel implements Runnable {
         initializeInput();
         initializeMultiplayer();
         initializeMessageTimer();
+        initializeMusic();  // ✨ ADD THIS
     }
     
     private void initializePanel() {
@@ -165,7 +167,7 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void initializeUI() {
-        // this.ui = new UI(this);
+        this.ui = new UI(this);
         this.profile = new Profile(this, player);
         this.remoteProfile = new RemoteProfile(this);
         this.inventoryWindow = new InventoryWindow(this);
@@ -191,6 +193,17 @@ public class GamePanel extends JPanel implements Runnable {
     private void initializeMessageTimer() {
         messageTimer = new Timer(100, e -> updateMessages());
         messageTimer.start();
+    }
+
+
+    // ✨ ADD THIS METHOD
+    private void initializeMusic() {
+        // Load the song
+        sound = new Sound();
+        sound.setFile("src\\res\\sound\\becky_g_arranca.wav");  // Update path to your file
+        
+        // Start playing on loop
+        sound.loop();
     }
     
     // ═══════════════════════════════════════════════════════════
@@ -277,7 +290,7 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void drawUI(Graphics2D g2d) {
-        // ui.draw(g2d);
+        ui.draw(g2d);
         
         if (displayProfile) {
             profile.draw(g2d);
@@ -553,6 +566,15 @@ public class GamePanel extends JPanel implements Runnable {
     // ═══════════════════════════════════════════════════════════
     
     private void handleMousePressed(MouseEvent e) {
+
+         mouseX = e.getX();
+        mouseY = e.getY();
+    
+           // ✨ ADD THIS - Update music player hover states
+        if (ui != null) {
+            ui.updatePlayButtonHover(mouseX, mouseY);
+            ui.updateStopButtonHover(mouseX, mouseY);
+        }
         // ✨ NEW - Check room navigator FIRST (highest priority)
         if (roomNavigator.isVisible()) {
             roomNavigator.handleClick(e.getX(), e.getY());
@@ -603,6 +625,28 @@ public class GamePanel extends JPanel implements Runnable {
         
         int mouseX = e.getX();
         int mouseY = e.getY();
+
+         // ✨ ADD THIS FIRST - Check music player clicks (highest priority)
+        if (ui != null) {
+            if (ui.isPlayButtonClicked(mouseX, mouseY)) {
+                // Toggle play/pause
+                if (sound != null) {
+                    sound.togglePlayPause();
+                }
+                repaint();
+                return;
+            }
+            
+            if (ui.isStopButtonClicked(mouseX, mouseY)) {
+                // Stop music
+                if (sound != null) {
+                    sound.stop();
+                }
+                repaint();
+                return;
+            }
+        }
+        
         
         // ✨ NEW - Check room navigator first
         if (roomNavigator.isVisible()) {

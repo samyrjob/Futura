@@ -15,13 +15,14 @@ public class ClientHandler extends Thread {
     private static final CommandRegistry registry = new CommandRegistry();
     
     private Socket socket;
+    private BufferedReader in; 
     private ClientContext context;
     
     public ClientHandler(Socket socket, GameServerGroup clientGroup) {
         this.socket = socket;
         
         try {
-            BufferedReader in = new BufferedReader(
+            in = new BufferedReader(
                 new InputStreamReader(socket.getInputStream()));
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             
@@ -34,6 +35,26 @@ public class ClientHandler extends Thread {
             e.printStackTrace();
         }
     }
+
+     // ═══════════════════════════════════════════════════════════
+    // THIS WAS MISSING - The thread's main loop!
+    // ═══════════════════════════════════════════════════════════
+    
+    @Override
+    public void run() {
+        try {
+            String message;
+            while ((message = in.readLine()) != null) {
+                System.out.println("Received from " + context.clientAddr + ":" + 
+                                   context.port + " - " + message);
+                processMessage(message);
+            }
+        } catch (IOException e) {
+            System.out.println("Client disconnected: " + context.clientAddr + ":" + context.port);
+        } finally {
+            cleanup();
+        }
+    }
     
     private void processMessage(String message) {
         int spaceIndex = message.indexOf(' ');
@@ -41,5 +62,28 @@ public class ClientHandler extends Thread {
         
         GameCommand command = registry.getCommand(commandName);
         command.execute(message, context);
+    }
+
+      // ═══════════════════════════════════════════════════════════
+    // ALSO MISSING - Cleanup when client disconnects
+    // ═══════════════════════════════════════════════════════════
+    
+    private void cleanup() {
+        try {
+            if (context.playerName != null) {
+                context.clientGroup.broadcastToRoom(
+                    context.currentRoomId, 
+                    context.clientAddr, 
+                    context.port,
+                    "playerLeft " + context.playerName
+                );
+                context.clientGroup.removeClient(context.clientAddr, context.port);
+                System.out.println(context.playerName + " disconnected from room: " + 
+                                   context.currentRoomId);
+            }
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
