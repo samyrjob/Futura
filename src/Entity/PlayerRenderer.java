@@ -37,7 +37,7 @@ public class PlayerRenderer extends Entity {
             // Diagonal up/down
             playerImageDiagonaleUp1 = loadImage("/res/player/sprite-back-mov-1.png");
             playerImageDiagonaleUp2 = loadImage("/res/player/sprite-back-mov-2.png");
-            playerImageDiagonaleUp = loadImage("/res/player/sprite_front_dancing_1.png");
+            playerImageDiagonaleUp = loadImage("/res/player/sprite_front_dancing_1-2.png");
             
             playerImageDiagonaleDown1 = loadImage("/res/player/sprite-front-mov-1.png");
             playerImageDiagonaleDown2 = loadImage("/res/player/sprite-front-mov-2.png");
