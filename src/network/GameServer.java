@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import network.clientHandler.ClientHandler;
+
 /**
  * GameServer - Main multiplayer server
  * Listens for client connections and creates ClientHandler threads

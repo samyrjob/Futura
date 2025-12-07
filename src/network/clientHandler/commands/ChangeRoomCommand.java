@@ -1,9 +1,11 @@
-package network.clientHandler;
+package network.clientHandler.commands;
 
 
 
 import java.util.StringTokenizer;
 import network.ClientInfo;
+import network.clientHandler.ClientContext;
+import network.clientHandler.GameCommand;
 
 public class ChangeRoomCommand implements GameCommand {
     

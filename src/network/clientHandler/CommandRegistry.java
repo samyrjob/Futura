@@ -1,7 +1,8 @@
-package network;
-
+package network.clientHandler;
+import network.clientHandler.commands.*;
 import java.util.HashMap;
 import java.util.Map;
+
 
 // Command registry
 public class CommandRegistry {
