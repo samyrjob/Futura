@@ -219,7 +219,7 @@ public class GamePanel extends JPanel implements Runnable {
     private void initializeMusic() {
         // Load the song
         sound = new Sound();
-        sound.setFile("src\\res\\sound\\becky_g_arranca.wav");  // Update path to your file
+        sound.setFile("src\\res\\sound\\Move For Me - DJ XOXO _ New Summer Dance Hit 2025.wav");  // Update path to your file
         
         // Start playing on loop
         sound.loop();
@@ -467,8 +467,10 @@ public class GamePanel extends JPanel implements Runnable {
         
         int mapX = (int) Math.floor((isoX + isoY) / 2);
         int mapY = (int) Math.floor((isoY - isoX) / 2);
+
+        //! calculate mouseX and mouseY and tile mapX mapY
         
-        System.out.println("Mouse: (" + mouseX + ", " + mouseY + ") → Tile: (" + mapX + ", " + mapY + ")");
+        // System.out.println("Mouse: (" + mouseX + ", " + mouseY + ") → Tile: (" + mapX + ", " + mapY + ")");
         
         return new Point(mapX, mapY);
     }

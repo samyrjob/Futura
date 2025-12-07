@@ -1,54 +1,3 @@
-// package main;
-
-// import java.net.URL;
-// import javax.sound.sampled.AudioSystem;
-// import javax.sound.sampled.AudioInputStream;
-// import javax.sound.sampled.Clip;
-
-
-// public class Sound {
-
-//     URL soundURL[]= new URL[30];
-//     Clip clip;
-
-//     public Sound(){
-
-//         soundURL[0] = getClass().getResource("/res/sound/BlueBoyAdventure.wav");
-//         soundURL[1] = getClass().getResource("/res/sound/coin.wav");
-//         soundURL[2] = getClass().getResource("/res/sound/fanfare.wav");
-//         soundURL[3] = getClass().getResource("/res/sound/powerup.wav");
-//         soundURL[4] = getClass().getResource("/res/sound/unlock.wav");
-//     }
-
-//     public void setFile(int i){
-
-//         try {
-
-//             AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(soundURL[i]);
-//             clip = AudioSystem.getClip();
-//             clip.open(audioInputStream);
-//         }
-//         catch (Exception e){
-
-//         }
-
-//     }
-
-//     public void play(){
-//         clip.start();
-//     }
-
-//     public void loop(){
-//         clip.loop(Clip.LOOP_CONTINUOUSLY);
-//     }
-
-//     public void stop(){
-//         clip.stop();
-//     }
-
-
-
-// }
 package main;
 
 import javax.sound.sampled.*;
@@ -56,7 +5,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Sound - Handles audio playback with play/pause/stop/loop
+ * Sound - Handles audio playback with RELIABLE looping
  */
 public class Sound {
     
@@ -64,7 +13,8 @@ public class Sound {
     private FloatControl volumeControl;
     private boolean isPlaying = false;
     private boolean isPaused = false;
-    private long clipPosition = 0;  // Remember position when paused
+    private boolean shouldLoop = false;  // ✨ NEW - Track if we want looping
+    private long clipPosition = 0;
     
     /**
      * Load sound from file path
@@ -83,6 +33,16 @@ public class Sound {
             // Create clip
             clip = AudioSystem.getClip();
             clip.open(audioStream);
+            
+            // ✨ NEW - Add listener to detect when clip finishes
+            clip.addLineListener(event -> {
+                if (event.getType() == LineEvent.Type.STOP && shouldLoop && !isPaused) {
+                    // Clip stopped but we want looping - restart it
+                    System.out.println("Clip ended, restarting loop...");
+                    clip.setFramePosition(0);
+                    clip.start();
+                }
+            });
             
             // Get volume control if available
             if (clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
@@ -107,9 +67,8 @@ public class Sound {
      * Load sound from index (for backward compatibility)
      */
     public void setFile(int index) {
-        // Map index to file - you can customize this
         String[] soundFiles = {
-            "res/sounds/song.wav",  // Index 0 = main song
+            "res/sounds/song.wav",
             "res/sounds/effect1.wav",
             "res/sounds/effect2.wav"
         };
@@ -125,13 +84,13 @@ public class Sound {
     public void play() {
         if (clip == null) return;
         
+        shouldLoop = false;  // ✨ Single play, no loop
+        
         if (isPaused) {
-            // Resume from paused position
             clip.setFramePosition((int) clipPosition);
             clip.start();
             isPaused = false;
         } else {
-            // Start from beginning
             clip.setFramePosition(0);
             clip.start();
         }
@@ -141,17 +100,26 @@ public class Sound {
     }
     
     /**
-     * Play sound on loop
+     * Play sound on loop - FIXED VERSION
      */
     public void loop() {
         if (clip == null) return;
         
+        shouldLoop = true;  // ✨ Enable auto-loop
+        
+        // Stop any current playback
+        if (clip.isRunning()) {
+            clip.stop();
+        }
+        
+        // Start from beginning
         clip.setFramePosition(0);
         clip.loop(Clip.LOOP_CONTINUOUSLY);
+        
         isPlaying = true;
         isPaused = false;
         
-        System.out.println("Looping sound");
+        System.out.println("Looping sound (LOOP_CONTINUOUSLY mode)");
     }
     
     /**
@@ -169,11 +137,32 @@ public class Sound {
     }
     
     /**
+     * Resume from pause
+     */
+    public void resume() {
+        if (clip == null || !isPaused) return;
+        
+        clip.setFramePosition((int) clipPosition);
+        
+        if (shouldLoop) {
+            clip.loop(Clip.LOOP_CONTINUOUSLY);  // Resume with looping
+        } else {
+            clip.start();  // Resume without looping
+        }
+        
+        isPlaying = true;
+        isPaused = false;
+        
+        System.out.println("Resumed sound");
+    }
+    
+    /**
      * Stop sound completely (resets to beginning)
      */
     public void stop() {
         if (clip == null) return;
         
+        shouldLoop = false;  // ✨ Disable looping
         clip.stop();
         clip.setFramePosition(0);
         isPlaying = false;
@@ -184,13 +173,20 @@ public class Sound {
     }
     
     /**
-     * Toggle between play and pause
+     * Toggle between play and pause - FIXED
      */
     public void togglePlayPause() {
-        if (isPlaying) {
+        if (isPaused) {
+            resume();  // ✨ Use resume instead of play
+        } else if (isPlaying) {
             pause();
         } else {
-            play();
+            // Not playing and not paused - start fresh
+            if (shouldLoop) {
+                loop();
+            } else {
+                play();
+            }
         }
     }
     
@@ -200,14 +196,22 @@ public class Sound {
     public void setVolume(float volume) {
         if (volumeControl == null) return;
         
-        // Clamp volume between 0 and 1
         volume = Math.max(0.0f, Math.min(1.0f, volume));
         
         // Convert linear volume to decibels
-        float dB = (float) (Math.log(volume) / Math.log(10.0) * 20.0);
-        volumeControl.setValue(dB);
+        // Special case: volume 0 should be minimum dB, not -infinity
+        float dB;
+        if (volume < 0.01f) {
+            dB = volumeControl.getMinimum();  // Mute
+        } else {
+            dB = (float) (Math.log(volume) / Math.log(10.0) * 20.0);
+            // Clamp to valid range
+            dB = Math.max(volumeControl.getMinimum(), 
+                         Math.min(volumeControl.getMaximum(), dB));
+        }
         
-        System.out.println("Volume set to: " + (volume * 100) + "%");
+        volumeControl.setValue(dB);
+        System.out.println("Volume set to: " + (int)(volume * 100) + "% (" + dB + " dB)");
     }
     
     /**
@@ -222,6 +226,13 @@ public class Sound {
      */
     public boolean isPaused() {
         return isPaused;
+    }
+    
+    /**
+     * Check if looping is enabled
+     */
+    public boolean isLooping() {
+        return shouldLoop;
     }
     
     /**
