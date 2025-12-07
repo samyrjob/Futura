@@ -6,9 +6,12 @@ import Entity.Entity.Direction;
 import Entity.Entity.Gender;
 import ui.profile.Profile;
 import ui.profile.RemoteProfile;
+import ui.UI;
 import ui.hud.TileHighlighter;
 import ui.inventory.InventoryWindow;
+import ui.room.RoomNavigator;  // ✨ NEW IMPORT
 import network.NetworkManager;
+import room.RoomManager;  // ✨ NEW IMPORT
 import tile.TileManager;
 import object.FurnitureManager;
 import java.awt.event.MouseEvent;
@@ -68,18 +71,20 @@ public class GamePanel extends JPanel implements Runnable {
     public TileManager tile_manager;
     public FurnitureManager furnitureManager;
     public NetworkManager networkManager;
+    public RoomManager roomManager;  // ✨ NEW - Room system
     
     // UI Components
-    // private UI ui;
+    private UI ui;
     private Profile profile;
     private RemoteProfile remoteProfile;
     public InventoryWindow inventoryWindow;
+    public RoomNavigator roomNavigator;  // ✨ NEW - Room navigation UI
     
     // Input handlers
     private TileHighlighter handleMouseHover;
     
     // Audio (paused)
-    private Sound sound;
+    public Sound sound;
     private Sound se;
     
     // ═══════════════════════════════════════════════════════════
@@ -130,6 +135,7 @@ public class GamePanel extends JPanel implements Runnable {
         initializeInput();
         initializeMultiplayer();
         initializeMessageTimer();
+        initializeMusic();  // ✨ ADD THIS
     }
     
     private void initializePanel() {
@@ -155,13 +161,19 @@ public class GamePanel extends JPanel implements Runnable {
         this.tile_manager = new TileManager(this);
         this.furnitureManager = new FurnitureManager(this);
         this.handleMouseHover = new TileHighlighter(this);
+        
+        // ✨ NEW - Initialize room system AFTER other managers
+        this.roomManager = new RoomManager(this);
     }
     
     private void initializeUI() {
-        // this.ui = new UI(this);
+        this.ui = new UI(this);
         this.profile = new Profile(this, player);
         this.remoteProfile = new RemoteProfile(this);
         this.inventoryWindow = new InventoryWindow(this);
+        
+        // ✨ NEW - Initialize room navigator AFTER roomManager exists
+        this.roomNavigator = new RoomNavigator(this, roomManager);
     }
     
     private void initializeInput() {
@@ -170,6 +182,25 @@ public class GamePanel extends JPanel implements Runnable {
         // Complex mouse listeners
         addMouseListener(new GameMouseListener());
         addMouseMotionListener(new GameMouseMotionListener());
+          
+    // ✨ ADD THIS - Keyboard listener
+    addKeyListener(new java.awt.event.KeyAdapter() {
+        @Override
+        public void keyPressed(java.awt.event.KeyEvent e) {
+            if (ui == null) return;
+            
+            switch (e.getKeyCode()) {
+                case java.awt.event.KeyEvent.VK_UP:
+                    ui.increaseVolume();  // Arrow UP = volume up
+                    repaint();
+                    break;
+                case java.awt.event.KeyEvent.VK_DOWN:
+                    ui.decreaseVolume();  // Arrow DOWN = volume down
+                    repaint();
+                    break;
+            }
+        }
+    });
     }
     
     private void initializeMultiplayer() {
@@ -181,6 +212,17 @@ public class GamePanel extends JPanel implements Runnable {
     private void initializeMessageTimer() {
         messageTimer = new Timer(100, e -> updateMessages());
         messageTimer.start();
+    }
+
+
+    // ✨ ADD THIS METHOD
+    private void initializeMusic() {
+        // Load the song
+        sound = new Sound();
+        sound.setFile("src\\res\\sound\\Move For Me - DJ XOXO _ New Summer Dance Hit 2025.wav");  // Update path to your file
+        
+        // Start playing on loop
+        sound.loop();
     }
     
     // ═══════════════════════════════════════════════════════════
@@ -267,7 +309,7 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void drawUI(Graphics2D g2d) {
-        // ui.draw(g2d);
+        ui.draw(g2d);
         
         if (displayProfile) {
             profile.draw(g2d);
@@ -279,6 +321,9 @@ public class GamePanel extends JPanel implements Runnable {
         
         inventoryWindow.drawPlacementPreview(g2d);
         inventoryWindow.draw(g2d);
+        
+        // ✨ NEW - Draw room navigator (always last so it's on top)
+        roomNavigator.draw(g2d);
     }
     
     private void drawChatBubbles(Graphics2D g2d) {
@@ -388,6 +433,11 @@ public class GamePanel extends JPanel implements Runnable {
         remotePlayers.remove(username);
         System.out.println("Removed remote player: " + username);
     }
+
+    public synchronized void removeAllRemotePlayers() {
+        remotePlayers.clear();
+        System.out.println("Cleared all remote players");
+    }
     
     public synchronized void addRemotePlayerChat(String username, String text) {
         RemotePlayer remotePlayer = remotePlayers.get(username);
@@ -417,8 +467,10 @@ public class GamePanel extends JPanel implements Runnable {
         
         int mapX = (int) Math.floor((isoX + isoY) / 2);
         int mapY = (int) Math.floor((isoY - isoX) / 2);
+
+        //! calculate mouseX and mouseY and tile mapX mapY
         
-        System.out.println("Mouse: (" + mouseX + ", " + mouseY + ") → Tile: (" + mapX + ", " + mapY + ")");
+        // System.out.println("Mouse: (" + mouseX + ", " + mouseY + ") → Tile: (" + mapX + ", " + mapY + ")");
         
         return new Point(mapX, mapY);
     }
@@ -535,6 +587,22 @@ public class GamePanel extends JPanel implements Runnable {
     // ═══════════════════════════════════════════════════════════
     
     private void handleMousePressed(MouseEvent e) {
+
+         mouseX = e.getX();
+        mouseY = e.getY();
+    
+           // ✨ ADD THIS - Update music player hover states
+        if (ui != null) {
+            ui.updatePlayButtonHover(mouseX, mouseY);
+            ui.updateStopButtonHover(mouseX, mouseY);
+        }
+        // ✨ NEW - Check room navigator FIRST (highest priority)
+        if (roomNavigator.isVisible()) {
+            roomNavigator.handleClick(e.getX(), e.getY());
+            repaint();
+            return;
+        }
+        
         // Inventory window
         if (inventoryWindow.isVisible()) {
             inventoryWindow.handleClick(e.getX(), e.getY());
@@ -578,6 +646,45 @@ public class GamePanel extends JPanel implements Runnable {
         
         int mouseX = e.getX();
         int mouseY = e.getY();
+
+        // ✨ Music player clicks (at the very beginning)
+    if (ui != null) {
+        if (ui.isPlayButtonClicked(mouseX, mouseY)) {
+            if (sound != null) {
+                sound.togglePlayPause();
+            }
+            repaint();
+            return;
+        }
+        
+        if (ui.isStopButtonClicked(mouseX, mouseY)) {
+            if (sound != null) {
+                sound.stop();
+            }
+            repaint();
+            return;
+        }
+        
+        // ✨ ADD THESE - Volume button clicks
+        if (ui.isVolumeUpClicked(mouseX, mouseY)) {
+            ui.increaseVolume();  // +10%
+            repaint();
+            return;
+        }
+        
+        if (ui.isVolumeDownClicked(mouseX, mouseY)) {
+            ui.decreaseVolume();  // -10%
+            repaint();
+            return;
+        }
+    }
+        
+        
+        // ✨ NEW - Check room navigator first
+        if (roomNavigator.isVisible()) {
+            // Already handled in handleMousePressed
+            return;
+        }
         
         // Check local player
         if (player.contains(mouseX, mouseY)) {
@@ -684,9 +791,22 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void handleMouseMoved(MouseEvent e) {
-           // ADD THESE TWO LINES:
-        mouseX = e.getX();  // ← ADD THIS
-        mouseY = e.getY();  // ← ADD THIS
+        mouseX = e.getX();
+        mouseY = e.getY();
+
+        // ✨ UPDATE THIS - Add volume button hovers
+        if (ui != null) {
+            ui.updatePlayButtonHover(mouseX, mouseY);
+            ui.updateStopButtonHover(mouseX, mouseY);
+            ui.updateVolumeUpHover(mouseX, mouseY);    // ✨ ADD THIS
+            ui.updateVolumeDownHover(mouseX, mouseY);  // ✨ ADD THIS
+        }
+        
+        // ✨ NEW - Update room navigator hover state
+        if (roomNavigator.isVisible()) {
+            roomNavigator.handleMouseMove(mouseX, mouseY);
+        }
+        
         if (inventoryWindow.isPlacementMode()) {
             inventoryWindow.updatePlacementPreview(e.getX(), e.getY());
             repaint();

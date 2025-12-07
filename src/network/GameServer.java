@@ -1,59 +1,46 @@
 package network;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 
+import network.clientHandler.ClientHandler;
+
+/**
+ * GameServer - Main multiplayer server
+ * Listens for client connections and creates ClientHandler threads
+ */
 public class GameServer {
     
     private static final int PORT = 5555;
-    private ServerSocket serverSocket;
-    private GameServerGroup clientGroup;
-    private volatile boolean running = true;
-    
-    public GameServer() {
-        clientGroup = new GameServerGroup();
-        System.out.println("Game Server starting on port " + PORT);
-        
-        try {
-            serverSocket = new ServerSocket(PORT);
-            System.out.println("Server started successfully. Waiting for players...");
-            
-            while (running) {
-                try {
-                    Socket clientSocket = serverSocket.accept();
-                    String clientAddr = clientSocket.getInetAddress().getHostAddress();
-                    int clientPort = clientSocket.getPort();
-                    
-                    System.out.println("New connection from: " + clientAddr + ":" + clientPort);
-                    
-                    ClientHandler handler = new ClientHandler(clientSocket, clientGroup, clientAddr, clientPort);
-                    handler.start();
-                    
-                } catch (IOException e) {
-                    if (running) {
-                        System.err.println("Error accepting client connection: " + e.getMessage());
-                    }
-                }
-            }
-            
-        } catch (IOException e) {
-            System.err.println("Could not start server on port " + PORT);
-            e.printStackTrace();
-        }
-    }
-    
-    public void shutdown() {
-        running = false;
-        try {
-            if (serverSocket != null && !serverSocket.isClosed()) {
-                serverSocket.close();
-            }
-        } catch (IOException e) {
-            System.err.println("Error closing server socket: " + e.getMessage());
-        }
-    }
+    private static GameServerGroup clientGroup;
     
     public static void main(String[] args) {
-        new GameServer();
+        clientGroup = new GameServerGroup();
+        
+        System.out.println("===========================================");
+        System.out.println("  Futura Multiplayer Server");
+        System.out.println("  Port: " + PORT);
+        System.out.println("  Room System: ENABLED");
+        System.out.println("===========================================");
+        
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+            System.out.println("Server is listening on port " + PORT);
+            
+            while (true) {
+                Socket socket = serverSocket.accept();
+                System.out.println("\n[NEW CONNECTION] " + 
+                                 socket.getInetAddress().getHostAddress() + 
+                                 ":" + socket.getPort());
+                
+                // ✨ UPDATED - Use simplified constructor (only 2 parameters)
+                ClientHandler clientHandler = new ClientHandler(socket, clientGroup);
+                clientHandler.start();
+            }
+            
+        } catch (IOException e) {
+            System.err.println("Server error: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

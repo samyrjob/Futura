@@ -78,6 +78,15 @@ public class TileManager {
         }
     }
 
+    public void setMapTileNum(int[][] newMap) {
+    // Copy the new map
+    for (int col = 0; col < gp.maxWorldCol; col++) {
+        for (int row = 0; row < gp.maxWorldRow; row++) {
+            mapTileNum[col][row] = newMap[col][row];
+        }
+    }
+}
+
 
 
 

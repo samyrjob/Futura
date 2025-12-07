@@ -41,11 +41,32 @@ public class NetworkManager {
         }
     }
     
+    // ═══════════════════════════════════════════════════════════
+    // ORIGINAL VERSION - Keep for backward compatibility
+    // ═══════════════════════════════════════════════════════════
+    
+    /**
+     * Send join message without room (defaults to "lobby")
+     */
     public void sendJoinMessage(String username, String gender, int mapX, int mapY, String direction) {
+        // Call the new version with default lobby room
+        sendJoinMessage(username, gender, mapX, mapY, direction, "lobby");
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // NEW VERSION - With room support
+    // ═══════════════════════════════════════════════════════════
+    
+    /**
+     * Send join message with room info
+     */
+    public void sendJoinMessage(String username, String gender, int mapX, int mapY, 
+                               String direction, String roomId) {
         if (connected && out != null) {
-            String message = "join " + username + " " + gender + " " + mapX + " " + mapY + " " + direction;
+            String message = "join " + username + " " + gender + " " + 
+                           mapX + " " + mapY + " " + direction + " " + roomId;
             out.println(message);
-            System.out.println("Sent join message: " + message);
+            System.out.println("Sent join message with room: " + message);
         }
     }
     
@@ -82,6 +103,31 @@ public class NetworkManager {
     public void sendByeMessage() {
         if (connected && out != null) {
             out.println("bye");
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // ROOM SYSTEM METHODS
+    // ═══════════════════════════════════════════════════════════
+    
+    /**
+     * Notify server that we're changing rooms
+     */
+    public void sendRoomChange(String roomId) {
+        if (connected && out != null) {
+            String message = "changeRoom " + roomId;
+            out.println(message);
+            System.out.println("Sent room change: " + roomId);
+        }
+    }
+    
+    /**
+     * Notify server that we're leaving current room
+     */
+    public void sendLeaveRoom(String roomId) {
+        if (connected && out != null) {
+            String message = "leaveRoom " + roomId;
+            out.println(message);
         }
     }
     

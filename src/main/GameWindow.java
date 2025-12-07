@@ -24,6 +24,8 @@ public class GameWindow {
     // Button colors
     private static final Color INVENTORY_BG = new Color(255, 193, 7);  // Gold
     private static final Color INVENTORY_BG_HOVER = new Color(255, 213, 79);
+    private static final Color ROOMS_BG = new Color(76, 175, 80);  // ✨ NEW - Green
+    private static final Color ROOMS_BG_HOVER = new Color(102, 187, 106);  // ✨ NEW
     private static final Color SEND_BG = Color.WHITE;
     private static final Color SEND_BG_HOVER = new Color(230, 230, 230);
     
@@ -33,6 +35,7 @@ public class GameWindow {
     private JTextField messageField;
     private JButton sendButton;
     private JButton inventoryButton;
+    private JButton roomsButton;  // ✨ NEW
     
     // Placeholder text
     private static final String PLACEHOLDER = "type here to write a message";
@@ -84,11 +87,13 @@ public class GameWindow {
         
         // Create components
         inventoryButton = createInventoryButton();
+        roomsButton = createRoomsButton();  // ✨ NEW
         messageField = createMessageField();
         sendButton = createSendButton();
         
         // Add to inner panel
         innerPanel.add(inventoryButton);
+        innerPanel.add(roomsButton);  // ✨ NEW - Add rooms button
         innerPanel.add(messageField);
         innerPanel.add(sendButton);
         
@@ -133,6 +138,31 @@ public class GameWindow {
         // Action
         button.addActionListener(e -> {
             gamePanel.inventoryWindow.toggle();
+            gamePanel.repaint();
+        });
+        
+        return button;
+    }
+    
+    // ✨ NEW - Rooms button
+    private JButton createRoomsButton() {
+        JButton button = createStyledButton("🏠 ROOMS", 110, 35, ROOMS_BG);
+        
+        // Hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setBackground(ROOMS_BG_HOVER);
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setBackground(ROOMS_BG);
+            }
+        });
+        
+        // Action
+        button.addActionListener(e -> {
+            gamePanel.roomNavigator.toggle();
             gamePanel.repaint();
         });
         
