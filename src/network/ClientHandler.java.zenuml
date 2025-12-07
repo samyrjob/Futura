@@ -1,0 +1,11 @@
+User -> System: Request Data
+System -> System: Process Data
+System -> User: Return Data
+
+if (x) {
+  A.m1()
+} else if (y) {
+  A.m2()
+} else {
+  A.m3()
+}

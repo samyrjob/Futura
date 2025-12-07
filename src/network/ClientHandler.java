@@ -4,37 +4,43 @@ import java.io.*;
 import java.net.*;
 import java.util.StringTokenizer;
 
+/**
+ * ClientHandler - Handles ONE client connection (runs in separate thread)
+ * NOW WITH ROOM SUPPORT!
+ */
 public class ClientHandler extends Thread {
     
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
     private GameServerGroup clientGroup;
+    
     private String clientAddr;
     private int port;
     private String playerName;
+    private String currentRoomId = "lobby";  // ✨ NEW - Track current room
     
-    public ClientHandler(Socket socket, GameServerGroup clientGroup, String clientAddr, int port) {
+    public ClientHandler(Socket socket, GameServerGroup clientGroup) {
         this.socket = socket;
         this.clientGroup = clientGroup;
-        this.clientAddr = clientAddr;
-        this.port = port;
+        this.clientAddr = socket.getInetAddress().getHostAddress();
+        this.port = socket.getPort();
         
         try {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
         } catch (IOException e) {
-            System.err.println("Error creating streams: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
     @Override
     public void run() {
         try {
-            String line;
-            while ((line = in.readLine()) != null) {
-                System.out.println("Received: " + line);
-                processMessage(line.trim());
+            String message;
+            while ((message = in.readLine()) != null) {
+                System.out.println("Received from " + clientAddr + ":" + port + " - " + message);
+                processMessage(message);
             }
         } catch (IOException e) {
             System.out.println("Client disconnected: " + clientAddr + ":" + port);
@@ -43,6 +49,10 @@ public class ClientHandler extends Thread {
         }
     }
     
+    // ═══════════════════════════════════════════════════════════
+    // MESSAGE PROCESSING
+    // ═══════════════════════════════════════════════════════════
+    
     private void processMessage(String message) {
         if (message.startsWith("join")) {
             handleJoin(message);
@@ -50,6 +60,10 @@ public class ClientHandler extends Thread {
             handleMove(message);
         } else if (message.startsWith("chat")) {
             handleChat(message);
+        } else if (message.startsWith("changeRoom")) {
+            handleChangeRoom(message);  // ✨ NEW
+        } else if (message.startsWith("leaveRoom")) {
+            handleLeaveRoom(message);   // ✨ NEW
         } else if (message.startsWith("wantDetails")) {
             handleWantDetails(message);
         } else if (message.startsWith("detailsFor")) {
@@ -59,8 +73,12 @@ public class ClientHandler extends Thread {
         }
     }
     
+    // ═══════════════════════════════════════════════════════════
+    // JOIN - Player enters game
+    // ═══════════════════════════════════════════════════════════
+    
     private void handleJoin(String message) {
-        // Format: join <username> <gender> <mapX> <mapY> <direction>
+        // Format: join <username> <gender> <mapX> <mapY> <direction> [roomId]
         StringTokenizer st = new StringTokenizer(message);
         st.nextToken(); // skip "join"
         
@@ -70,80 +88,163 @@ public class ClientHandler extends Thread {
         int mapY = Integer.parseInt(st.nextToken());
         String direction = st.nextToken();
         
+        // ✨ NEW - Get room ID (defaults to "lobby" if not provided)
+        if (st.hasMoreTokens()) {
+            currentRoomId = st.nextToken();
+        } else {
+            currentRoomId = "lobby";
+        }
+        
         // Add this client to the group
-        ClientInfo clientInfo = new ClientInfo(out, clientAddr, port, playerName, gender, mapX, mapY, direction);
+        ClientInfo clientInfo = new ClientInfo(
+            out, clientAddr, port, playerName, gender, mapX, mapY, direction, currentRoomId
+        );
         clientGroup.addClient(clientInfo);
         
-        // Broadcast join message to all other clients
-        String joinMsg = "playerJoined " + playerName + " " + gender + " " + mapX + " " + mapY + " " + direction;
-        clientGroup.broadcast(clientAddr, port, joinMsg);
+        // ✨ CHANGED - Broadcast join message ONLY to players in same room
+        String joinMsg = "playerJoined " + playerName + " " + gender + " " + 
+                        mapX + " " + mapY + " " + direction;
+        clientGroup.broadcastToRoom(currentRoomId, clientAddr, port, joinMsg);
         
-        // Request details from all existing players
-        clientGroup.broadcast(clientAddr, port, "wantDetails " + clientAddr + " " + port);
+        // Request details from players in same room
+        clientGroup.broadcastToRoom(currentRoomId, clientAddr, port, 
+                                    "wantDetails " + clientAddr + " " + port);
+        
+        System.out.println(playerName + " joined room: " + currentRoomId);
     }
+    
+    // ═══════════════════════════════════════════════════════════
+    // MOVE - Player moves
+    // ═══════════════════════════════════════════════════════════
     
     private void handleMove(String message) {
-        // Format: move <mapX> <mapY> <direction> <inMovement>
+        // ✨ CHANGED - Broadcast only to same room
         if (playerName != null) {
-            String moveMsg = "playerMoved " + playerName + " " + message.substring(5); // Remove "move "
-            clientGroup.broadcast(clientAddr, port, moveMsg);
+            String moveMsg = "playerMoved " + playerName + " " + message.substring(5);
+            clientGroup.broadcastToRoom(currentRoomId, clientAddr, port, moveMsg);
         }
     }
+    
+    // ═══════════════════════════════════════════════════════════
+    // CHAT - Player sends chat
+    // ═══════════════════════════════════════════════════════════
     
     private void handleChat(String message) {
-        // Format: chat <text>
+        // ✨ CHANGED - Broadcast only to same room
         if (playerName != null) {
-            String chatMsg = "playerChat " + playerName + " " + message.substring(5); // Remove "chat "
-            clientGroup.broadcast(clientAddr, port, chatMsg);
+            String chatMsg = "playerChat " + playerName + " " + message.substring(5);
+            clientGroup.broadcastToRoom(currentRoomId, clientAddr, port, chatMsg);
         }
     }
     
+    // ═══════════════════════════════════════════════════════════
+    // CHANGE ROOM - ✨ NEW - Player switches rooms
+    // ═══════════════════════════════════════════════════════════
+    
+    private void handleChangeRoom(String message) {
+        // Format: changeRoom <newRoomId>
+        StringTokenizer st = new StringTokenizer(message);
+        st.nextToken(); // skip "changeRoom"
+        String newRoomId = st.nextToken();
+        
+        // Notify old room that player left
+        String leaveMsg = "playerLeft " + playerName;
+        clientGroup.broadcastToRoom(currentRoomId, clientAddr, port, leaveMsg);
+        
+        // Update current room
+        String oldRoomId = currentRoomId;
+        currentRoomId = newRoomId;
+        
+        // Update client info
+        ClientInfo clientInfo = clientGroup.getClient(clientAddr, port);
+        if (clientInfo != null) {
+            clientInfo.currentRoomId = newRoomId;
+        }
+        
+        // Notify new room that player joined
+        String joinMsg = "playerJoined " + playerName + " " + clientInfo.gender + " " +
+                        clientInfo.mapX + " " + clientInfo.mapY + " " + clientInfo.direction;
+        clientGroup.broadcastToRoom(newRoomId, clientAddr, port, joinMsg);
+        
+        // Request details from players in new room
+        clientGroup.broadcastToRoom(newRoomId, clientAddr, port,
+                                    "wantDetails " + clientAddr + " " + port);
+        
+        System.out.println(playerName + " changed from room '" + oldRoomId + 
+                          "' to room '" + newRoomId + "'");
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // LEAVE ROOM - ✨ NEW - Player explicitly leaves room
+    // ═══════════════════════════════════════════════════════════
+    
+    private void handleLeaveRoom(String message) {
+        // Format: leaveRoom <roomId>
+        StringTokenizer st = new StringTokenizer(message);
+        st.nextToken(); // skip "leaveRoom"
+        String roomId = st.nextToken();
+        
+        String leaveMsg = "playerLeft " + playerName;
+        clientGroup.broadcastToRoom(roomId, clientAddr, port, leaveMsg);
+        
+        System.out.println(playerName + " left room: " + roomId);
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // WANT DETAILS - Request player details
+    // ═══════════════════════════════════════════════════════════
+    
     private void handleWantDetails(String message) {
-        // Format: wantDetails <requesterAddr> <requesterPort>
         StringTokenizer st = new StringTokenizer(message);
         st.nextToken(); // skip "wantDetails"
         String requesterAddr = st.nextToken();
         int requesterPort = Integer.parseInt(st.nextToken());
         
-        // Send our details to the requester
-        ClientInfo myInfo = clientGroup.getClient(clientAddr, port);
-        if (myInfo != null) {
-            String detailsMsg = "detailsFor " + requesterAddr + " " + requesterPort + " " +
-                               playerName + " " + myInfo.gender + " " + 
-                               myInfo.mapX + " " + myInfo.mapY + " " + myInfo.direction;
-            out.println(detailsMsg);
+        // Only send details if we're in the same room as requester
+        ClientInfo requester = clientGroup.getClient(requesterAddr, requesterPort);
+        if (requester != null && requester.currentRoomId.equals(currentRoomId)) {
+            ClientInfo myInfo = clientGroup.getClient(clientAddr, port);
+            if (myInfo != null) {
+                clientGroup.sendTo(requesterAddr, requesterPort,
+                    "detailsFor " + playerName + " " + myInfo.gender + " " +
+                    myInfo.mapX + " " + myInfo.mapY + " " + myInfo.direction);
+            }
         }
     }
+    
+    // ═══════════════════════════════════════════════════════════
+    // DETAILS FOR - Receive player details
+    // ═══════════════════════════════════════════════════════════
     
     private void handleDetailsFor(String message) {
-        // Format: detailsFor <targetAddr> <targetPort> <username> <gender> <mapX> <mapY> <direction>
-        StringTokenizer st = new StringTokenizer(message);
-        st.nextToken(); // skip "detailsFor"
-        String targetAddr = st.nextToken();
-        int targetPort = Integer.parseInt(st.nextToken());
-        
-        String remainingMsg = message.substring(message.indexOf(targetPort + "") + (targetPort + "").length()).trim();
-        String detailsMsg = "detailsFor " + remainingMsg;
-        
-        clientGroup.sendTo(targetAddr, targetPort, detailsMsg);
+        // Just forward to client
+        out.println(message);
     }
     
+    // ═══════════════════════════════════════════════════════════
+    // BYE - Player disconnects
+    // ═══════════════════════════════════════════════════════════
+    
     private void handleBye() {
-        if (playerName != null) {
-            String byeMsg = "playerLeft " + playerName;
-            clientGroup.broadcast(clientAddr, port, byeMsg);
-        }
         cleanup();
     }
     
+    // ═══════════════════════════════════════════════════════════
+    // CLEANUP
+    // ═══════════════════════════════════════════════════════════
+    
     private void cleanup() {
         try {
-            clientGroup.removeClient(clientAddr, port);
-            if (socket != null && !socket.isClosed()) {
-                socket.close();
+            if (playerName != null) {
+                // Notify room that player left
+                clientGroup.broadcastToRoom(currentRoomId, clientAddr, port, 
+                                           "playerLeft " + playerName);
+                clientGroup.removeClient(clientAddr, port);
+                System.out.println(playerName + " disconnected from room: " + currentRoomId);
             }
+            socket.close();
         } catch (IOException e) {
-            System.err.println("Error closing socket: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
