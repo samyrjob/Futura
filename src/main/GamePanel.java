@@ -182,6 +182,25 @@ public class GamePanel extends JPanel implements Runnable {
         // Complex mouse listeners
         addMouseListener(new GameMouseListener());
         addMouseMotionListener(new GameMouseMotionListener());
+          
+    // ✨ ADD THIS - Keyboard listener
+    addKeyListener(new java.awt.event.KeyAdapter() {
+        @Override
+        public void keyPressed(java.awt.event.KeyEvent e) {
+            if (ui == null) return;
+            
+            switch (e.getKeyCode()) {
+                case java.awt.event.KeyEvent.VK_UP:
+                    ui.increaseVolume();  // Arrow UP = volume up
+                    repaint();
+                    break;
+                case java.awt.event.KeyEvent.VK_DOWN:
+                    ui.decreaseVolume();  // Arrow DOWN = volume down
+                    repaint();
+                    break;
+            }
+        }
+    });
     }
     
     private void initializeMultiplayer() {
@@ -626,26 +645,37 @@ public class GamePanel extends JPanel implements Runnable {
         int mouseX = e.getX();
         int mouseY = e.getY();
 
-         // ✨ ADD THIS FIRST - Check music player clicks (highest priority)
-        if (ui != null) {
-            if (ui.isPlayButtonClicked(mouseX, mouseY)) {
-                // Toggle play/pause
-                if (sound != null) {
-                    sound.togglePlayPause();
-                }
-                repaint();
-                return;
+        // ✨ Music player clicks (at the very beginning)
+    if (ui != null) {
+        if (ui.isPlayButtonClicked(mouseX, mouseY)) {
+            if (sound != null) {
+                sound.togglePlayPause();
             }
-            
-            if (ui.isStopButtonClicked(mouseX, mouseY)) {
-                // Stop music
-                if (sound != null) {
-                    sound.stop();
-                }
-                repaint();
-                return;
-            }
+            repaint();
+            return;
         }
+        
+        if (ui.isStopButtonClicked(mouseX, mouseY)) {
+            if (sound != null) {
+                sound.stop();
+            }
+            repaint();
+            return;
+        }
+        
+        // ✨ ADD THESE - Volume button clicks
+        if (ui.isVolumeUpClicked(mouseX, mouseY)) {
+            ui.increaseVolume();  // +10%
+            repaint();
+            return;
+        }
+        
+        if (ui.isVolumeDownClicked(mouseX, mouseY)) {
+            ui.decreaseVolume();  // -10%
+            repaint();
+            return;
+        }
+    }
         
         
         // ✨ NEW - Check room navigator first
@@ -761,6 +791,14 @@ public class GamePanel extends JPanel implements Runnable {
     private void handleMouseMoved(MouseEvent e) {
         mouseX = e.getX();
         mouseY = e.getY();
+
+        // ✨ UPDATE THIS - Add volume button hovers
+        if (ui != null) {
+            ui.updatePlayButtonHover(mouseX, mouseY);
+            ui.updateStopButtonHover(mouseX, mouseY);
+            ui.updateVolumeUpHover(mouseX, mouseY);    // ✨ ADD THIS
+            ui.updateVolumeDownHover(mouseX, mouseY);  // ✨ ADD THIS
+        }
         
         // ✨ NEW - Update room navigator hover state
         if (roomNavigator.isVisible()) {
