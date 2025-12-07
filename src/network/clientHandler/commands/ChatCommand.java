@@ -3,7 +3,7 @@ package network.clientHandler.commands;
 import network.clientHandler.ClientContext;
 import network.clientHandler.GameCommand;
 
-class ChatCommand implements GameCommand {
+public class ChatCommand implements GameCommand {
     
     @Override
     public void execute(String message, ClientContext ctx) {
