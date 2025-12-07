@@ -1,0 +1,8 @@
+@Actor <<run>>ClientHandler
+try {
+  ClientHandler -> message.ProcessMessage()
+} catch (Exception e) {
+    new Error(Client DISCONNECTED)
+} finally {
+    ClientHandler(cleanup)
+}
