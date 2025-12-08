@@ -24,6 +24,13 @@ public class RoomNavigator {
     private static final int HEADER_HEIGHT = 40;
     private static final int ROOM_ITEM_HEIGHT = 60;
     
+    // ═══════════════════════════════════════════════════════════
+    // ✨ NEW - Dragging state
+    // ═══════════════════════════════════════════════════════════
+    private boolean isDragging = false;
+    private int dragOffsetX = 0;
+    private int dragOffsetY = 0;
+    
     // UI state
     private int scrollOffset = 0;
     private Room hoveredRoom;
@@ -65,6 +72,7 @@ public class RoomNavigator {
         if (visible) {
             scrollOffset = 0;
             hoveredRoom = null;
+            isDragging = false;
         }
     }
     
@@ -96,8 +104,62 @@ public class RoomNavigator {
         hoveredRoom = getRoomAtPosition(mouseX, mouseY);
     }
     
+    // ═══════════════════════════════════════════════════════════
+    // ✨ NEW - Handle mouse press (start dragging)
+    // ═══════════════════════════════════════════════════════════
+    public void handleMousePressed(int mouseX, int mouseY) {
+        if (!visible) return;
+        
+        // Check if clicking on header (to start drag)
+        if (isOnHeader(mouseX, mouseY) && !hoverCloseButton) {
+            isDragging = true;
+            dragOffsetX = mouseX - windowX;
+            dragOffsetY = mouseY - windowY;
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // ✨ NEW - Handle mouse drag
+    // ═══════════════════════════════════════════════════════════
+    public void handleMouseDragged(int mouseX, int mouseY) {
+        if (!visible || !isDragging) return;
+        
+        // Update window position
+        windowX = mouseX - dragOffsetX;
+        windowY = mouseY - dragOffsetY;
+        
+        // Constrain to screen bounds
+        windowX = Math.max(0, Math.min(windowX, gp.screenWidth - WINDOW_WIDTH));
+        windowY = Math.max(0, Math.min(windowY, gp.screenHeight - WINDOW_HEIGHT));
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // ✨ NEW - Handle mouse release (stop dragging)
+    // ═══════════════════════════════════════════════════════════
+    public void handleMouseReleased() {
+        isDragging = false;
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // ✨ NEW - Check if mouse is on header
+    // ═══════════════════════════════════════════════════════════
+    private boolean isOnHeader(int mouseX, int mouseY) {
+        return mouseX >= windowX && mouseX <= windowX + WINDOW_WIDTH &&
+               mouseY >= windowY && mouseY <= windowY + HEADER_HEIGHT;
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // ✨ NEW - Check if currently dragging
+    // ═══════════════════════════════════════════════════════════
+    public boolean isDragging() {
+        return isDragging;
+    }
+    
     public void handleClick(int mouseX, int mouseY) {
         if (!visible) return;
+        
+        // ✨ Don't process clicks while dragging
+        if (isDragging) return;
         
         // Close button
         if (hoverCloseButton) {
@@ -174,13 +236,12 @@ public class RoomNavigator {
         String roomName = promptForRoomName();
         if (roomName != null && !roomName.trim().isEmpty()) {
             Room newRoom = roomManager.createRoom(roomName, gp.player.name);
-            currentTab = Tab.MY_ROOMS;  // Switch to my rooms tab
+            currentTab = Tab.MY_ROOMS;
             System.out.println("Created room: " + newRoom.getRoomName());
         }
     }
     
     private String promptForRoomName() {
-        // Simple dialog for now
         return javax.swing.JOptionPane.showInputDialog(
             null,
             "Enter room name:",
@@ -192,7 +253,7 @@ public class RoomNavigator {
     private void enterRoom(Room room) {
         boolean success = roomManager.enterRoom(room.getRoomId(), gp.player.name);
         if (success) {
-            visible = false;  // Close navigator
+            visible = false;
             System.out.println("Entering room: " + room.getRoomName());
         } else {
             System.out.println("Failed to enter room");
@@ -215,23 +276,19 @@ public class RoomNavigator {
     }
     
     private void drawWindow(Graphics2D g2d) {
-        // Background
         g2d.setColor(WINDOW_BG);
         g2d.fillRoundRect(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 20, 20);
         
-        // Border
         g2d.setColor(HEADER_BG);
         g2d.setStroke(new BasicStroke(3));
         g2d.drawRoundRect(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 20, 20);
     }
     
     private void drawHeader(Graphics2D g2d) {
-        // Header background
         g2d.setColor(HEADER_BG);
         g2d.fillRoundRect(windowX, windowY, WINDOW_WIDTH, HEADER_HEIGHT, 20, 20);
         g2d.fillRect(windowX, windowY + 20, WINDOW_WIDTH, 20);
         
-        // Title
         g2d.setColor(Color.WHITE);
         g2d.setFont(new Font("Arial", Font.BOLD, 18));
         g2d.drawString("Room Navigator", windowX + 15, windowY + 27);
@@ -241,21 +298,17 @@ public class RoomNavigator {
         int tabY = windowY + HEADER_HEIGHT + 10;
         int tabHeight = 30;
         
-        // Public rooms tab
         drawTab(g2d, "Public Rooms", windowX + 20, tabY, 100, tabHeight, 
                currentTab == Tab.PUBLIC_ROOMS);
         
-        // My rooms tab
         drawTab(g2d, "My Rooms", windowX + 130, tabY, 100, tabHeight, 
                currentTab == Tab.MY_ROOMS);
     }
     
     private void drawTab(Graphics2D g2d, String text, int x, int y, int width, int height, boolean active) {
-        // Background
         g2d.setColor(active ? HEADER_BG : new Color(200, 200, 200));
         g2d.fillRoundRect(x, y, width, height, 10, 10);
         
-        // Text
         g2d.setColor(active ? Color.WHITE : Color.BLACK);
         g2d.setFont(new Font("Arial", Font.BOLD, 12));
         FontMetrics fm = g2d.getFontMetrics();
@@ -272,15 +325,12 @@ public class RoomNavigator {
         int listWidth = WINDOW_WIDTH - 20;
         int listHeight = WINDOW_HEIGHT - HEADER_HEIGHT - 100;
         
-        // Clip to list area
         g2d.setClip(listX, listY, listWidth, listHeight);
         
-        // Draw rooms
         for (int i = 0; i < rooms.size(); i++) {
             Room room = rooms.get(i);
             int itemY = listY + (i * ROOM_ITEM_HEIGHT) - scrollOffset;
             
-            // Skip if not visible
             if (itemY + ROOM_ITEM_HEIGHT < listY || itemY > listY + listHeight) {
                 continue;
             }
@@ -288,10 +338,8 @@ public class RoomNavigator {
             drawRoomItem(g2d, room, listX, itemY, listWidth);
         }
         
-        // Clear clip
         g2d.setClip(null);
         
-        // Draw "no rooms" message
         if (rooms.isEmpty()) {
             g2d.setColor(Color.GRAY);
             g2d.setFont(new Font("Arial", Font.ITALIC, 14));
@@ -308,7 +356,6 @@ public class RoomNavigator {
         boolean isHovered = (room == hoveredRoom);
         boolean isCurrent = room.getRoomId().equals(roomManager.getCurrentRoomId());
         
-        // Background
         if (isCurrent) {
             g2d.setColor(CURRENT_ROOM);
         } else if (isHovered) {
@@ -318,28 +365,23 @@ public class RoomNavigator {
         }
         g2d.fillRoundRect(x, y, width, ROOM_ITEM_HEIGHT - 5, 10, 10);
         
-        // Border
         g2d.setColor(new Color(180, 180, 180));
         g2d.drawRoundRect(x, y, width, ROOM_ITEM_HEIGHT - 5, 10, 10);
         
-        // Room name
         g2d.setColor(Color.BLACK);
         g2d.setFont(new Font("Arial", Font.BOLD, 14));
         g2d.drawString(room.getRoomName(), x + 15, y + 25);
         
-        // Owner
         g2d.setFont(new Font("Arial", Font.PLAIN, 11));
         g2d.setColor(Color.GRAY);
         g2d.drawString("by " + room.getOwnerUsername(), x + 15, y + 42);
         
-        // Current room indicator
         if (isCurrent) {
             g2d.setColor(new Color(0, 128, 0));
             g2d.setFont(new Font("Arial", Font.BOLD, 10));
             g2d.drawString("● CURRENT", x + width - 80, y + 25);
         }
         
-        // Type indicator
         String typeText = room.getRoomType().name();
         g2d.setColor(new Color(100, 100, 100));
         g2d.setFont(new Font("Arial", Font.ITALIC, 9));
@@ -352,11 +394,9 @@ public class RoomNavigator {
         int buttonWidth = 100;
         int buttonHeight = 35;
         
-        // Background
         g2d.setColor(hoverCreateButton ? new Color(0, 153, 76) : new Color(76, 175, 80));
         g2d.fillRoundRect(buttonX, buttonY, buttonWidth, buttonHeight, 10, 10);
         
-        // Text
         g2d.setColor(Color.WHITE);
         g2d.setFont(new Font("Arial", Font.BOLD, 14));
         FontMetrics fm = g2d.getFontMetrics();
@@ -377,10 +417,6 @@ public class RoomNavigator {
         g2d.setFont(new Font("Arial", Font.BOLD, 14));
         g2d.drawString("X", closeX + 6, closeY + 14);
     }
-    
-    // ═══════════════════════════════════════════════════════════
-    // HELPERS
-    // ═══════════════════════════════════════════════════════════
     
     private List<Room> getRoomsForCurrentTab() {
         switch (currentTab) {
