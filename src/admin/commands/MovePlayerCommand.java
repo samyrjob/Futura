@@ -2,8 +2,13 @@ package admin.commands;
 
 import admin.AdminCommand;
 import admin.AdminContext;
+import admin.shared.AdminActionFile;
 import network.ClientInfo;
 
+/**
+ * MOVE_PLAYER command - Now uses shared file approach (Approach A)
+ * Writes to admin_actions.dat instead of direct execution
+ */
 public class MovePlayerCommand implements AdminCommand {
     
     @Override
@@ -16,42 +21,29 @@ public class MovePlayerCommand implements AdminCommand {
             return;
         }
         
-        String username = parts[1];
+        String targetUsername = parts[1];
         String targetRoomId = parts[2];
         
-        ClientInfo player = context.clientGroup.getClientByName(username);
+        // Verify player exists before writing action
+        ClientInfo target = context.clientGroup.getClientByName(targetUsername);
         
-        if (player == null) {
-            context.send("ERROR Player not found: " + username);
+        if (target == null) {
+            context.send("ERROR Player not found: " + targetUsername);
             return;
         }
         
-        String oldRoom = player.currentRoomId;
+        // Check if already in target room
+        if (target.currentRoomId.equals(targetRoomId)) {
+            context.send("ERROR Player " + targetUsername + " is already in room: " + targetRoomId);
+            return;
+        }
         
-        // Notify old room that player left
-        context.clientGroup.broadcastToRoom(
-            oldRoom,
-            player.address,
-            player.port,
-            "playerLeft " + username
-        );
+        // Write action to shared file (Approach A)
+        String actionId = AdminActionFile.writeMoveAction(targetUsername, targetRoomId);
         
-        // Update player's room
-        player.currentRoomId = targetRoomId;
-        
-        // Tell player to change rooms
-        player.sendMessage("forceRoomChange " + targetRoomId);
-        
-        // Notify new room that player joined
-        context.clientGroup.broadcastToRoom(
-            targetRoomId,
-            player.address,
-            player.port,
-            "playerJoined " + username + " " + player.gender + " " + 
-            player.mapX + " " + player.mapY + " " + player.direction
-        );
-        
-        context.send("SUCCESS Moved " + username + " from " + oldRoom + " to " + targetRoomId);
-        System.out.println("[ADMIN] Moved " + username + ": " + oldRoom + " → " + targetRoomId);
+        context.send("SUCCESS MOVE action queued [" + actionId + "] for player: " + 
+                    targetUsername + " → " + targetRoomId);
+        System.out.println("[ADMIN] MOVE queued via file - ID: " + actionId + 
+                          ", Target: " + targetUsername + ", Room: " + targetRoomId);
     }
 }
