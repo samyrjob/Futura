@@ -589,8 +589,19 @@ public class GamePanel extends JPanel implements Runnable {
     
     private void handleMousePressed(MouseEvent e) {
 
-         mouseX = e.getX();
+        mouseX = e.getX();
         mouseY = e.getY();
+
+            // ✨ NEW - Handle room navigator dragging
+        if (roomNavigator.isVisible()) {
+            roomNavigator.handleMousePressed(e.getX(), e.getY());
+            if (roomNavigator.isDragging()) {
+                return;  // Don't process other clicks while starting drag
+            }
+            roomNavigator.handleClick(e.getX(), e.getY());
+            repaint();
+            return;
+        }
     
            // ✨ ADD THIS - Update music player hover states
         if (ui != null) {
@@ -634,6 +645,11 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void handleMouseReleased(MouseEvent e) {
+
+          // ✨ NEW - Stop room navigator dragging
+        if (roomNavigator.isVisible()) {
+            roomNavigator.handleMouseReleased();
+        }
         if (e.getButton() == MouseEvent.BUTTON1) {
             isDragging = false;
             setCursor(Cursor.getDefaultCursor());
@@ -761,6 +777,14 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void handleMouseDragged(MouseEvent e) {
+
+        // ✨ NEW - Room navigator dragging
+        if (roomNavigator.isVisible() && roomNavigator.isDragging()) {
+            roomNavigator.handleMouseDragged(e.getX(), e.getY());
+            repaint();
+            return;
+        }
+
         // Inventory dragging
         if (inventoryWindow.isVisible()) {
             inventoryWindow.handleDrag(e.getX(), e.getY());

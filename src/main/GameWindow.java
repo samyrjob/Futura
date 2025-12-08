@@ -146,8 +146,18 @@ public class GameWindow {
     
     // ✨ NEW - Rooms button
     private JButton createRoomsButton() {
-        JButton button = createStyledButton("🏠 ROOMS", 110, 35, ROOMS_BG);
+        JButton button = createStyledButton(" ROOMS", 110, 35, ROOMS_BG);
+
+
         
+    try {
+        ImageIcon originalIcon = new ImageIcon("src/res/icons/room_icon.png");
+        // Scale to 20x20 pixels (adjust as needed)
+        Image scaledImage = originalIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        button.setIcon(new ImageIcon(scaledImage));
+    } catch (Exception e) {
+        System.out.println("Icon not found");
+    }
         // Hover effect
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
