@@ -90,21 +90,37 @@ public class AdminActionWatcher extends Thread {
             return;
         }
         
-        // Send kick message to player
+        String oldRoom = target.currentRoomId;
+        
+        // Send kick message to player (client will move to lobby)
         target.sendMessage("KICKED " + reason);
         
-        // Notify room that player left
+        // Notify old room that player left
         clientGroup.broadcastToRoom(
-            target.currentRoomId,
+            oldRoom,
             target.address,
             target.port,
             "playerLeft " + username
         );
         
-        // Remove from server
-        clientGroup.removeClient(target.address, target.port);
+        // ✨ UPDATE: Change player's room to lobby on server side (don't remove them)
+        target.currentRoomId = "lobby";
         
-        System.out.println("[ACTION WATCHER] KICKED player: " + username + " (Reason: " + reason + ")");
+        // Reset position
+        target.mapX = 4;
+        target.mapY = 2;
+        
+        // Notify lobby that player joined
+        clientGroup.broadcastToRoom(
+            "lobby",
+            target.address,
+            target.port,
+            "playerJoined " + username + " " + target.gender + " " + 
+            target.mapX + " " + target.mapY + " " + target.direction
+        );
+        
+        System.out.println("[ACTION WATCHER] KICKED player: " + username + 
+                        " (Reason: " + reason + ") - Moved to lobby");
     }
     
     private void executeMovePlayer(AdminAction action) {
