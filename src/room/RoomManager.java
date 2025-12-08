@@ -21,9 +21,7 @@ public class RoomManager {
     public RoomManager(GamePanel gp) {
         this.gp = gp;
         this.rooms = new HashMap<>();
-        
-        // Create default lobby
-        createLobby();
+    
         
         // Load saved rooms
         loadRooms();
@@ -37,21 +35,7 @@ public class RoomManager {
     // ROOM CREATION
     // ═══════════════════════════════════════════════════════════
     
-    /**
-     * Create the default lobby room
-     */
-    private void createLobby() {
-        Room lobby = new Room("Lobby", "System", gp.maxWorldCol, gp.maxWorldRow);
-        lobby.setRoomType(Room.RoomType.PUBLIC);
-        lobby.setMaxPlayers(50);
-        
-        // Load lobby tile layout from existing map
-        int[][] lobbyTiles = loadDefaultTileLayout();
-        lobby.setTileMap(lobbyTiles);
-        
-        rooms.put(LOBBY_ID, lobby);
-        System.out.println("Lobby created");
-    }
+ 
     
     /**
      * Create a new room
