@@ -3,6 +3,7 @@ package room;
 import java.util.HashMap;
 import java.util.Map;
 
+import main.GameConstants;
 import main.GamePanel;
 
 public class RoomPublic {
@@ -10,8 +11,7 @@ public class RoomPublic {
       private GamePanel gp;
       private Map<String, Room> publicRooms;
          
-      // Default lobby room
-      private static final String LOBBY_ID = "lobby";
+    
 
 
       public RoomPublic(GamePanel gp) {
@@ -36,7 +36,7 @@ public class RoomPublic {
         int[][] lobbyTiles = loadDefaultTileLayout();
         lobby.setTileMap(lobbyTiles);
         
-        publicRooms.put(LOBBY_ID, lobby);
+        publicRooms.put(GameConstants.LOBBY_ROOM_ID, lobby);
         System.out.println("Lobby created");
     }
 

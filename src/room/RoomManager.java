@@ -1,5 +1,6 @@
 package room;
 
+import main.GameConstants;
 import main.GamePanel;
 import java.util.*;
 import java.io.*;
@@ -15,8 +16,7 @@ public class RoomManager {
     private Room currentRoom;                  // Room player is currently in
     private String currentRoomId;
     
-    // Default lobby room
-    private static final String LOBBY_ID = "lobby";
+
     
     public RoomManager(GamePanel gp) {
         this.gp = gp;
@@ -27,8 +27,8 @@ public class RoomManager {
         loadRooms();
         
         // Start in lobby
-        currentRoom = rooms.get(LOBBY_ID);
-        currentRoomId = LOBBY_ID;
+        currentRoom = rooms.get(GameConstants.LOBBY_ROOM_ID);
+        currentRoomId = GameConstants.LOBBY_ROOM_ID;
     }
     
     // ═══════════════════════════════════════════════════════════
@@ -72,7 +72,7 @@ public class RoomManager {
         
         if (room == null) return false;
         if (!room.isOwner(username)) return false;
-        if (roomId.equals(LOBBY_ID)) return false;  // Can't delete lobby
+        if (roomId.equals(GameConstants.LOBBY_ROOM_ID)) return false;  // Can't delete lobby
         
         rooms.remove(roomId);
         System.out.println("Room deleted: " + room);
@@ -124,7 +124,7 @@ public class RoomManager {
      * Return to lobby
      */
     public void returnToLobby() {
-        enterRoom(LOBBY_ID, gp.player.name);
+        enterRoom(GameConstants.LOBBY_ROOM_ID, gp.player.name);
     }
     
     /**
@@ -244,20 +244,31 @@ public class RoomManager {
             int count = 0;
             
             while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                
                 try {
                     Room room = Room.deserialize(line);
                     
-                    // Don't override lobby
-                    if (!room.getRoomId().equals(LOBBY_ID)) {
-                        rooms.put(room.getRoomId(), room);
-                        count++;
-                    }
+                    // ✨ LOAD ALL ROOMS - Don't skip any!
+                    rooms.put(room.getRoomId(), room);
+                    count++;
+                    
+                    // Debug: Print what we're loading
+                    System.out.println("Loaded room: " + room.getRoomName() + " [" + room.getRoomId() + "]");
+                    
                 } catch (Exception e) {
                     System.err.println("Failed to load room: " + e.getMessage());
                 }
             }
             
-            System.out.println("Loaded " + count + " rooms");
+            System.out.println("Total rooms loaded: " + count);
+            
+            // ✨ Verify lobby exists
+            if (rooms.containsKey(GameConstants.LOBBY_ROOM_ID)) {
+                System.out.println("✓ Lobby room found: " + GameConstants.LOBBY_ROOM_ID);
+            } else {
+                System.err.println("✗ WARNING: Lobby room NOT found: " + GameConstants.LOBBY_ROOM_ID);
+            }
             
         } catch (IOException e) {
             System.err.println("Failed to load rooms: " + e.getMessage());

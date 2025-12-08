@@ -3,6 +3,7 @@ package network;
 import java.io.*;
 import java.util.StringTokenizer;
 
+import main.GameConstants;
 import main.GamePanel;
 import Entity.Entity.Gender;
 
@@ -295,7 +296,7 @@ public class ServerMessageWatcher extends Thread {
             
             // Notify server that we're now in lobby
             if (networkManager != null && networkManager.isConnected()) {
-                networkManager.sendRoomChange("lobby");
+                networkManager.sendRoomChange(GameConstants.LOBBY_ROOM_ID);
             }
         });
     }
