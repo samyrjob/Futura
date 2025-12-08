@@ -49,6 +49,15 @@ public class ServerMessageWatcher extends Thread {
             handleWantDetails(message);
         } else if (message.startsWith("detailsFor")) {
             handleDetailsFor(message);
+        } else if (message.startsWith("forceRoomChange")) {
+            handleForceRoomChange(message);  // ✨ NEW
+        } else if (message.startsWith("adminMessage")) {
+            handleAdminMessage(message);     // ✨ NEW
+        } else if (message.startsWith("KICKED")) {
+            handleKicked(message);           // ✨ NEW
+        }   // Unknown message
+        else {
+            System.out.println("Unknown message from server: " + message);
         }
     }
     
@@ -141,9 +150,85 @@ public class ServerMessageWatcher extends Thread {
         
         gamePanel.addRemotePlayer(username, gender, mapX, mapY, directionStr);
     }
-    
-    public void stopWatching() {
-        running = false;
-        this.interrupt();
+
+
+    // ═══════════════════════════════════════════════════════════
+    // ADMIN COMMAND HANDLERS
+    // ═══════════════════════════════════════════════════════════
+
+    private void handleForceRoomChange(String message) {
+        // Format: forceRoomChange <roomId>
+        StringTokenizer st = new StringTokenizer(message);
+        st.nextToken(); // skip "forceRoomChange"
+        
+        if (!st.hasMoreTokens()) {
+            System.err.println("Invalid forceRoomChange message");
+            return;
+        }
+        
+        String targetRoomId = st.nextToken();
+        System.out.println("[ADMIN] Forcing room change to: " + targetRoomId);
+        
+        // Switch rooms using RoomManager
+        if (gamePanel.roomManager != null) {
+            // Run on EDT to avoid threading issues with Swing
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                gamePanel.roomManager.enterRoom(targetRoomId, gamePanel.player.name);
+            });
+        }
+    }
+
+    private void handleAdminMessage(String message) {
+        // Format: adminMessage <text...>
+        int spaceIndex = message.indexOf(' ');
+        
+        if (spaceIndex == -1) {
+            System.err.println("Invalid adminMessage format");
+            return;
+        }
+        
+        String text = message.substring(spaceIndex + 1);
+        System.out.println("[ADMIN BROADCAST] " + text);
+        
+        // Show as chat bubble above player
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            int bubbleY = gamePanel.player.spriteY + 50;
+            gamePanel.player.messages.add(
+                new Entity.Player.Message("[ADMIN]: " + text, bubbleY)
+            );
+        });
+    }
+
+    private void handleKicked(String message) {
+        // Format: KICKED <reason...>
+        String reason = "No reason provided";
+        
+        if (message.length() > 7) {
+            reason = message.substring(7); // Skip "KICKED "
+        }
+        
+        System.out.println("[KICKED] " + reason);
+        
+        final String finalReason = reason;
+        
+        // Disconnect and show dialog on EDT
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            // Stop watching for messages
+            running = false;
+            
+            // Disconnect from server
+            networkManager.disconnect();
+            
+            // Show message to user
+            javax.swing.JOptionPane.showMessageDialog(
+                gamePanel,
+                "You have been kicked from the server:\n\n" + finalReason,
+                "Kicked by Admin",
+                javax.swing.JOptionPane.WARNING_MESSAGE
+            );
+            
+            // Optional: Return to main menu or exit
+            // System.exit(0);
+        });
     }
 }

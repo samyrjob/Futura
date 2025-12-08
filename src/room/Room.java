@@ -213,6 +213,7 @@ public class Room {
     /**
      * Create room from string
      */
+   // Note: To match this character literally, escape it with itself. In other words to search for \ use /\\/.
     public static Room deserialize(String data) {
         String[] parts = data.split("\\|");
         
