@@ -17,11 +17,8 @@ public class RoomPublic {
       public RoomPublic(GamePanel gp) {
         this.gp = gp;
         this.publicRooms = new HashMap<>();
-    
-        
         // Load saved public rooms
-        loadPubicRooms();
-        
+        // loadPubicRooms();
     }
 
 
