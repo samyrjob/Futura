@@ -3,6 +3,7 @@ package network;
 import java.io.*;
 import java.net.*;
 
+import main.GameConstants;
 import main.GamePanel;
 
 public class NetworkManager {
@@ -50,7 +51,7 @@ public class NetworkManager {
      */
     public void sendJoinMessage(String username, String gender, int mapX, int mapY, String direction) {
         // Call the new version with default lobby room
-        sendJoinMessage(username, gender, mapX, mapY, direction, "lobby");
+        sendJoinMessage(username, gender, mapX, mapY, direction, GameConstants.LOBBY_ROOM_ID);
     }
     
     // ═══════════════════════════════════════════════════════════

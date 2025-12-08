@@ -2,6 +2,8 @@ package admin.shared;
 
 import network.ClientInfo;
 import network.GameServerGroup;
+import main.GameConstants;
+
 
 import java.util.List;
 
@@ -104,7 +106,7 @@ public class AdminActionWatcher extends Thread {
         );
         
         // ✨ UPDATE: Change player's room to lobby on server side (don't remove them)
-        target.currentRoomId = "lobby";
+        target.currentRoomId = GameConstants.LOBBY_ROOM_ID;
         
         // Reset position
         target.mapX = 4;
@@ -112,7 +114,7 @@ public class AdminActionWatcher extends Thread {
         
         // Notify lobby that player joined
         clientGroup.broadcastToRoom(
-            "lobby",
+            GameConstants.LOBBY_ROOM_ID,
             target.address,
             target.port,
             "playerJoined " + username + " " + target.gender + " " + 

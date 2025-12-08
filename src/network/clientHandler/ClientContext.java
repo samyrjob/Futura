@@ -3,6 +3,7 @@ package network.clientHandler;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import main.GameConstants;
 import network.GameServerGroup;
 
 public class ClientContext {
@@ -20,7 +21,7 @@ public class ClientContext {
         this.clientGroup = clientGroup;
         this.clientAddr = clientAddr;
         this.port = port;
-        this.currentRoomId = "lobby";
+        this.currentRoomId = GameConstants.LOBBY_ROOM_ID;
         this.socket = socket;
     }
 }
