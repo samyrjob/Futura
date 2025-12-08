@@ -36,7 +36,12 @@ public class ServerMessageWatcher extends Thread {
         }
     }
     
+    // ═══════════════════════════════════════════════════════════
+    // MESSAGE ROUTER
+    // ═══════════════════════════════════════════════════════════
+    
     private void processMessage(String message) {
+        // Player events
         if (message.startsWith("playerJoined")) {
             handlePlayerJoined(message);
         } else if (message.startsWith("playerMoved")) {
@@ -45,21 +50,30 @@ public class ServerMessageWatcher extends Thread {
             handlePlayerChat(message);
         } else if (message.startsWith("playerLeft")) {
             handlePlayerLeft(message);
-        } else if (message.startsWith("wantDetails")) {
+        } 
+        // Details exchange
+        else if (message.startsWith("wantDetails")) {
             handleWantDetails(message);
         } else if (message.startsWith("detailsFor")) {
             handleDetailsFor(message);
-        } else if (message.startsWith("forceRoomChange")) {
-            handleForceRoomChange(message);  // ✨ NEW
+        }
+        // ✨ Admin commands - FIXED
+        else if (message.startsWith("forceRoomChange")) {
+            handleForceRoomChange(message);
         } else if (message.startsWith("adminMessage")) {
-            handleAdminMessage(message);     // ✨ NEW
+            handleAdminMessage(message);
         } else if (message.startsWith("KICKED")) {
-            handleKicked(message);           // ✨ NEW
-        }   // Unknown message
+            handleKicked(message);
+        }
+        // Unknown
         else {
             System.out.println("Unknown message from server: " + message);
         }
     }
+    
+    // ═══════════════════════════════════════════════════════════
+    // PLAYER EVENT HANDLERS
+    // ═══════════════════════════════════════════════════════════
     
     private void handlePlayerJoined(String message) {
         // Format: playerJoined <username> <gender> <mapX> <mapY> <direction>
@@ -113,6 +127,10 @@ public class ServerMessageWatcher extends Thread {
         gamePanel.removeRemotePlayer(username);
     }
     
+    // ═══════════════════════════════════════════════════════════
+    // DETAILS EXCHANGE HANDLERS
+    // ═══════════════════════════════════════════════════════════
+    
     private void handleWantDetails(String message) {
         // Format: wantDetails <requesterAddr> <requesterPort>
         StringTokenizer st = new StringTokenizer(message);
@@ -150,55 +168,86 @@ public class ServerMessageWatcher extends Thread {
         
         gamePanel.addRemotePlayer(username, gender, mapX, mapY, directionStr);
     }
-
-
+    
     // ═══════════════════════════════════════════════════════════
-    // ADMIN COMMAND HANDLERS
+    // ✨ ADMIN COMMAND HANDLERS - FIXED VERSION
     // ═══════════════════════════════════════════════════════════
-
+    
     private void handleForceRoomChange(String message) {
         // Format: forceRoomChange <roomId>
         StringTokenizer st = new StringTokenizer(message);
         st.nextToken(); // skip "forceRoomChange"
         
         if (!st.hasMoreTokens()) {
-            System.err.println("Invalid forceRoomChange message");
+            System.err.println("[CLIENT] Invalid forceRoomChange message - no room ID");
             return;
         }
         
         String targetRoomId = st.nextToken();
-        System.out.println("[ADMIN] Forcing room change to: " + targetRoomId);
+        System.out.println("[CLIENT] Admin forcing room change to: " + targetRoomId);
         
-        // Switch rooms using RoomManager
-        if (gamePanel.roomManager != null) {
-            // Run on EDT to avoid threading issues with Swing
-            javax.swing.SwingUtilities.invokeLater(() -> {
-                gamePanel.roomManager.enterRoom(targetRoomId, gamePanel.player.name);
-            });
-        }
+        // ✨ ACTUALLY change the room on the client side
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            if (gamePanel.roomManager != null) {
+                // Check if room exists
+                room.Room targetRoom = gamePanel.roomManager.getRoom(targetRoomId);
+                
+                if (targetRoom != null) {
+                    // Room exists - enter it
+                    boolean success = gamePanel.roomManager.enterRoom(targetRoomId, gamePanel.player.name);
+                    
+                    if (success) {
+                        System.out.println("[CLIENT] Successfully moved to room: " + targetRoomId);
+                        
+                        // Show notification to player
+                        showAdminNotification("You have been moved to room: " + targetRoom.getRoomName());
+                    } else {
+                        System.err.println("[CLIENT] Failed to enter room: " + targetRoomId);
+                    }
+                } else {
+                    // Room doesn't exist on client - go to lobby instead
+                    System.out.println("[CLIENT] Room not found locally, going to lobby");
+                    gamePanel.roomManager.returnToLobby();
+                    showAdminNotification("Admin moved you - room not found, returned to lobby");
+                }
+                
+                // Close the room navigator if open
+                if (gamePanel.roomNavigator != null && gamePanel.roomNavigator.isVisible()) {
+                    gamePanel.roomNavigator.toggle();
+                }
+                
+                // Repaint to show changes
+                gamePanel.repaint();
+            } else {
+                System.err.println("[CLIENT] RoomManager is null!");
+            }
+        });
     }
-
+    
     private void handleAdminMessage(String message) {
         // Format: adminMessage <text...>
         int spaceIndex = message.indexOf(' ');
         
         if (spaceIndex == -1) {
-            System.err.println("Invalid adminMessage format");
+            System.err.println("[CLIENT] Invalid adminMessage format");
             return;
         }
         
         String text = message.substring(spaceIndex + 1);
-        System.out.println("[ADMIN BROADCAST] " + text);
+        System.out.println("[CLIENT] Admin broadcast: " + text);
         
         // Show as chat bubble above player
         javax.swing.SwingUtilities.invokeLater(() -> {
-            int bubbleY = gamePanel.player.spriteY + 50;
-            gamePanel.player.messages.add(
-                new Entity.Player.Message("[ADMIN]: " + text, bubbleY)
-            );
+            if (gamePanel.player != null) {
+                int bubbleY = gamePanel.player.spriteY + 50;
+                gamePanel.player.messages.add(
+                    new Entity.Player.Message("[ADMIN]: " + text, bubbleY)
+                );
+                gamePanel.repaint();
+            }
         });
     }
-
+    
     private void handleKicked(String message) {
         // Format: KICKED <reason...>
         String reason = "No reason provided";
@@ -207,28 +256,69 @@ public class ServerMessageWatcher extends Thread {
             reason = message.substring(7); // Skip "KICKED "
         }
         
-        System.out.println("[KICKED] " + reason);
+        System.out.println("[CLIENT] KICKED by admin: " + reason);
         
         final String finalReason = reason;
         
-        // Disconnect and show dialog on EDT
         javax.swing.SwingUtilities.invokeLater(() -> {
-            // Stop watching for messages
-            running = false;
+            // ✨ Instead of disconnecting, move player to lobby
+            if (gamePanel.roomManager != null) {
+                // Return to lobby
+                gamePanel.roomManager.returnToLobby();
+                
+                // Reset player position
+                gamePanel.player.movement.xCurrent = 4;
+                gamePanel.player.movement.yCurrent = 2;
+                gamePanel.player.updateSpritePosition();
+                
+                // Close any open windows
+                if (gamePanel.roomNavigator != null && gamePanel.roomNavigator.isVisible()) {
+                    gamePanel.roomNavigator.toggle();
+                }
+                
+                // Show kick message
+                javax.swing.JOptionPane.showMessageDialog(
+                    gamePanel,
+                    "You have been kicked by an admin:\n\n" + finalReason + "\n\nYou have been returned to the lobby.",
+                    "Kicked by Admin",
+                    javax.swing.JOptionPane.WARNING_MESSAGE
+                );
+                
+                // Show notification in game
+                int bubbleY = gamePanel.player.spriteY + 50;
+                gamePanel.player.messages.add(
+                    new Entity.Player.Message("[ADMIN]: You were kicked - " + finalReason, bubbleY)
+                );
+                
+                gamePanel.repaint();
+            }
             
-            // Disconnect from server
-            networkManager.disconnect();
-            
-            // Show message to user
-            javax.swing.JOptionPane.showMessageDialog(
-                gamePanel,
-                "You have been kicked from the server:\n\n" + finalReason,
-                "Kicked by Admin",
-                javax.swing.JOptionPane.WARNING_MESSAGE
-            );
-            
-            // Optional: Return to main menu or exit
-            // System.exit(0);
+            // Notify server that we're now in lobby
+            if (networkManager != null && networkManager.isConnected()) {
+                networkManager.sendRoomChange("lobby");
+            }
         });
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // HELPER METHODS
+    // ═══════════════════════════════════════════════════════════
+    
+    private void showAdminNotification(String text) {
+        if (gamePanel.player != null) {
+            int bubbleY = gamePanel.player.spriteY + 50;
+            gamePanel.player.messages.add(
+                new Entity.Player.Message("[SYSTEM]: " + text, bubbleY)
+            );
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // CONTROL
+    // ═══════════════════════════════════════════════════════════
+    
+    public void stopWatching() {
+        running = false;
+        this.interrupt();
     }
 }
