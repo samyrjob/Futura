@@ -4,12 +4,9 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import admin.AdminServer;
 import network.clientHandler.ClientHandler;
 
-/**
- * GameServer - Main multiplayer server
- * Listens for client connections and creates ClientHandler threads
- */
 public class GameServer {
     
     private static final int PORT = 5555;
@@ -20,20 +17,24 @@ public class GameServer {
         
         System.out.println("===========================================");
         System.out.println("  Futura Multiplayer Server");
-        System.out.println("  Port: " + PORT);
+        System.out.println("  Game Port: " + PORT);
+        System.out.println("  Admin Port: 5001");
         System.out.println("  Room System: ENABLED");
         System.out.println("===========================================");
         
+        // ✨ NEW - Start Admin Server in separate thread
+        AdminServer adminServer = new AdminServer(clientGroup);
+        adminServer.start();
+        
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("Server is listening on port " + PORT);
+            System.out.println("Game server listening on port " + PORT);
             
             while (true) {
                 Socket socket = serverSocket.accept();
-                System.out.println("\n[NEW CONNECTION] " + 
+                System.out.println("\n[NEW PLAYER] " + 
                                  socket.getInetAddress().getHostAddress() + 
                                  ":" + socket.getPort());
                 
-                // ✨ UPDATED - Use simplified constructor (only 2 parameters)
                 ClientHandler clientHandler = new ClientHandler(socket, clientGroup);
                 clientHandler.start();
             }

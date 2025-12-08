@@ -118,4 +118,35 @@ public class GameServerGroup {
         }
         return count;
     }
+
+    // Add these methods to your existing GameServerGroup.java
+
+    /**
+     * Get ALL connected clients
+     */
+    public synchronized List<ClientInfo> getAllClients() {
+        return new ArrayList<>(clients);
+    }
+
+    /**
+     * Find client by username
+     */
+    public synchronized ClientInfo getClientByName(String playerName) {
+        for (ClientInfo client : clients) {
+            if (client.playerName != null && client.playerName.equals(playerName)) {
+                return client;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Broadcast to ALL clients (admin announcements)
+     */
+    public synchronized void broadcastToAll(String message) {
+        for (ClientInfo client : clients) {
+            client.sendMessage(message);
+        }
+        System.out.println("[BROADCAST ALL] " + message);
+    }
 }
