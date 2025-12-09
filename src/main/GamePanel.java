@@ -1,11 +1,10 @@
 package main;
 
 
-import friend.FriendManager;
-import friend.FriendRequest;
-import friend.FriendRequestPopup;
-import ui.friends.FriendsPanel;
-import kafka.FriendEventConsumer;
+import controller.friend.FriendController;
+import model.friend.FriendRequest;
+import view.friend.FriendsPanel;
+import view.friend.FriendRequestPopup;
 
 import Entity.Player;
 import Entity.RemotePlayer;
@@ -97,11 +96,10 @@ public class GamePanel extends JPanel implements Runnable {
 
     // friend request fields
     //-------------------------------
-
-    public FriendManager friendManager;
+    public FriendController friendController;
     public FriendsPanel friendsPanel;
     public FriendRequestPopup friendRequestPopup;
-    private FriendEventConsumer kafkaConsumer;
+// NOTE: No more kafkaConsumer field - it's handled inside FriendController!
     
     // ═══════════════════════════════════════════════════════════
     // MULTIPLAYER STATE
@@ -223,21 +221,38 @@ public class GamePanel extends JPanel implements Runnable {
         this.remotePlayers = new HashMap<>();
         this.networkManager = new NetworkManager(this);
         this.player.setNetworkManager(networkManager);
+        
+        // Friend system is now initialized in initializeFriendSystem()
+        // Kafka is handled internally by FriendController!
+    }
 
-           // ✨ NEW - Start Kafka consumer for friend events
+
+        /**
+     * Initialize the Friend system (MVC pattern)
+     * Call this AFTER player is created
+     */
+    private void initializeFriendSystem() {
         try {
-            this.friendManager = new FriendManager(this, player.name);
-            this.kafkaConsumer = new FriendEventConsumer(friendManager, player.name);
-            kafkaConsumer.setFriendManager(friendManager);  // Make sure it's set
-            kafkaConsumer.start();
+            // Create controller (handles business logic + Kafka internally)
+            this.friendController = new FriendController(
+                this, 
+                player.name, 
+                player.gender.toString()
+            );
             
-            System.out.println("[GAME] Kafka consumer started for friend events");
+            // Create view components
+            this.friendsPanel = new FriendsPanel(this, friendController);
+            this.friendRequestPopup = new FriendRequestPopup(this, friendController);
+            
+            System.out.println("[GAME] Friend system initialized (MVC)");
         } catch (Exception e) {
-            System.err.println("[GAME] Failed to start Kafka consumer: " + e.getMessage());
-            System.err.println("[GAME] Friend requests will use server fallback");
+            System.err.println("[GAME] Failed to initialize friend system: " + e.getMessage());
+            e.printStackTrace();
         }
     }
-    
+
+
+        
     private void initializeMessageTimer() {
         messageTimer = new Timer(100, e -> updateMessages());
         messageTimer.start();
@@ -284,6 +299,7 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
     
+    // The update method stays mostly the same
     public void update() {
         player.update();
         
@@ -293,9 +309,14 @@ public class GamePanel extends JPanel implements Runnable {
             }
         }
 
-            // ✨ NEW - Update friend request popup (for auto-hide timeout)
+        // ✨ Update friend request popup (same as before)
         if (friendRequestPopup != null) {
             friendRequestPopup.update();
+        }
+        
+        // ✨ NEW - Update friends panel (for any animations)
+        if (friendsPanel != null) {
+            friendsPanel.update();
         }
     }
     
@@ -435,9 +456,10 @@ public class GamePanel extends JPanel implements Runnable {
     // ═══════════════════════════════════════════════════════════
     
     public void setupGame() {
-        this.friendManager = new FriendManager(this, player.name);
-        this.friendsPanel = new FriendsPanel(this, friendManager);
-        this.friendRequestPopup = new FriendRequestPopup(this);
+        // Initialize friend system (MVC)
+        initializeFriendSystem();
+        
+        // Connect to multiplayer server
         connectToServer();
     }
     
@@ -566,17 +588,13 @@ public class GamePanel extends JPanel implements Runnable {
     // ═══════════════════════════════════════════════════════════
     
     public void cleanup() {
-
         System.out.println("[GAME] Cleaning up...");
-    
-        // ✨ NEW - Shutdown friend system
-        if (friendManager != null) {
-            friendManager.shutdown();
+
+        // Shutdown friend system (controller handles Kafka internally)
+        if (friendsPanel != null) {
+            friendsPanel.shutdown();
         }
-        if (kafkaConsumer != null) {
-            kafkaConsumer.shutdown();
-        }
-    
+
         if (networkManager != null && multiplayerEnabled) {
             networkManager.sendByeMessage();
             networkManager.disconnect();
@@ -969,7 +987,7 @@ public class GamePanel extends JPanel implements Runnable {
      */
     public void showFriendRequestPopup(FriendRequest request) {
         // Find the sender's RemotePlayer (if they're in the same room)
-        Entity.RemotePlayer sender = null;
+        RemotePlayer sender = null;
         synchronized (remotePlayers) {
             sender = remotePlayers.get(request.getFromUsername());
         }
