@@ -1,5 +1,12 @@
 package main;
 
+
+import friend.FriendManager;
+import friend.FriendRequest;
+import friend.FriendRequestPopup;
+import ui.friends.FriendsPanel;
+import kafka.FriendEventConsumer;
+
 import Entity.Player;
 import Entity.RemotePlayer;
 import Entity.Entity.Direction;
@@ -16,6 +23,7 @@ import tile.TileManager;
 import object.FurnitureManager;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseWheelEvent;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.*;
@@ -86,6 +94,14 @@ public class GamePanel extends JPanel implements Runnable {
     // Audio (paused)
     public Sound sound;
     private Sound se;
+
+    // friend request fields
+    //-------------------------------
+
+    public FriendManager friendManager;
+    public FriendsPanel friendsPanel;
+    public FriendRequestPopup friendRequestPopup;
+    private FriendEventConsumer kafkaConsumer;
     
     // ═══════════════════════════════════════════════════════════
     // MULTIPLAYER STATE
@@ -207,6 +223,19 @@ public class GamePanel extends JPanel implements Runnable {
         this.remotePlayers = new HashMap<>();
         this.networkManager = new NetworkManager(this);
         this.player.setNetworkManager(networkManager);
+
+           // ✨ NEW - Start Kafka consumer for friend events
+        try {
+            this.friendManager = new FriendManager(this, player.name);
+            this.kafkaConsumer = new FriendEventConsumer(friendManager, player.name);
+            kafkaConsumer.setFriendManager(friendManager);  // Make sure it's set
+            kafkaConsumer.start();
+            
+            System.out.println("[GAME] Kafka consumer started for friend events");
+        } catch (Exception e) {
+            System.err.println("[GAME] Failed to start Kafka consumer: " + e.getMessage());
+            System.err.println("[GAME] Friend requests will use server fallback");
+        }
     }
     
     private void initializeMessageTimer() {
@@ -262,6 +291,11 @@ public class GamePanel extends JPanel implements Runnable {
             for (RemotePlayer remotePlayer : remotePlayers.values()) {
                 remotePlayer.update();
             }
+        }
+
+            // ✨ NEW - Update friend request popup (for auto-hide timeout)
+        if (friendRequestPopup != null) {
+            friendRequestPopup.update();
         }
     }
     
@@ -325,7 +359,13 @@ public class GamePanel extends JPanel implements Runnable {
         
         // ✨ NEW - Draw room navigator (always last so it's on top)
         roomNavigator.draw(g2d);
-    }
+
+                // ✨ NEW - Draw friends panel
+        friendsPanel.draw(g2d);
+        
+        // ✨ NEW - Draw friend request popup (ALWAYS LAST - on top of everything)
+        friendRequestPopup.draw(g2d);
+        }
     
     private void drawChatBubbles(Graphics2D g2d) {
         // Local player messages
@@ -395,6 +435,9 @@ public class GamePanel extends JPanel implements Runnable {
     // ═══════════════════════════════════════════════════════════
     
     public void setupGame() {
+        this.friendManager = new FriendManager(this, player.name);
+        this.friendsPanel = new FriendsPanel(this, friendManager);
+        this.friendRequestPopup = new FriendRequestPopup(this);
         connectToServer();
     }
     
@@ -523,6 +566,17 @@ public class GamePanel extends JPanel implements Runnable {
     // ═══════════════════════════════════════════════════════════
     
     public void cleanup() {
+
+        System.out.println("[GAME] Cleaning up...");
+    
+        // ✨ NEW - Shutdown friend system
+        if (friendManager != null) {
+            friendManager.shutdown();
+        }
+        if (kafkaConsumer != null) {
+            kafkaConsumer.shutdown();
+        }
+    
         if (networkManager != null && multiplayerEnabled) {
             networkManager.sendByeMessage();
             networkManager.disconnect();
@@ -591,6 +645,33 @@ public class GamePanel extends JPanel implements Runnable {
 
         mouseX = e.getX();
         mouseY = e.getY();
+            // ✨ NEW - Check friend request popup FIRST (highest priority)
+        if (friendRequestPopup.isVisible()) {
+            if (friendRequestPopup.handleClick(mouseX, mouseY)) {
+                repaint();
+                return;
+            }
+        }
+        
+        // ✨ NEW - Check friends panel
+        if (friendsPanel.isVisible()) {
+            friendsPanel.handleMousePressed(mouseX, mouseY);
+            if (friendsPanel.isDragging()) {
+                return;
+            }
+            if (friendsPanel.handleClick(mouseX, mouseY)) {
+                repaint();
+                return;
+            }
+        }
+        
+        // ✨ NEW - Check remote profile friend button
+        if (remoteProfile.isVisible()) {
+            if (remoteProfile.handleClick(mouseX, mouseY)) {
+                repaint();
+                return;
+            }
+        }
 
             // ✨ NEW - Handle room navigator dragging
         if (roomNavigator.isVisible()) {
@@ -645,6 +726,11 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void handleMouseReleased(MouseEvent e) {
+
+           // ✨ NEW - Friends panel release
+        if (friendsPanel.isVisible()) {
+            friendsPanel.handleMouseReleased();
+        }
 
           // ✨ NEW - Stop room navigator dragging
         if (roomNavigator.isVisible()) {
@@ -778,6 +864,14 @@ public class GamePanel extends JPanel implements Runnable {
     
     private void handleMouseDragged(MouseEvent e) {
 
+
+                // ✨ NEW - Friends panel dragging
+        if (friendsPanel.isVisible() && friendsPanel.isDragging()) {
+            friendsPanel.handleMouseDragged(e.getX(), e.getY());
+            repaint();
+            return;
+        }
+
         // ✨ NEW - Room navigator dragging
         if (roomNavigator.isVisible() && roomNavigator.isDragging()) {
             roomNavigator.handleMouseDragged(e.getX(), e.getY());
@@ -819,6 +913,21 @@ public class GamePanel extends JPanel implements Runnable {
         mouseX = e.getX();
         mouseY = e.getY();
 
+            // ✨ NEW - Update friend popup hover
+        if (friendRequestPopup.isVisible()) {
+            friendRequestPopup.handleMouseMove(mouseX, mouseY);
+        }
+        
+        // ✨ NEW - Update friends panel hover
+        if (friendsPanel.isVisible()) {
+            friendsPanel.handleMouseMove(mouseX, mouseY);
+        }
+        
+        // ✨ NEW - Update remote profile hover (for friend button)
+        if (remoteProfile.isVisible()) {
+            remoteProfile.handleMouseMove(mouseX, mouseY);
+        }
+
         // ✨ UPDATE THIS - Add volume button hovers
         if (ui != null) {
             ui.updatePlayButtonHover(mouseX, mouseY);
@@ -837,4 +946,47 @@ public class GamePanel extends JPanel implements Runnable {
             repaint();
         }
     }
+
+
+    private void handleMouseWheelMoved(MouseWheelEvent e) {
+    // ✨ NEW - Friends panel scrolling
+    if (friendsPanel.isVisible() && friendsPanel.containsPoint(e.getX(), e.getY())) {
+        friendsPanel.handleScroll(e.getWheelRotation());
+        repaint();
+        return;
+    }
+    
+    // ... rest of existing scroll handling ...
+}
+
+
+        // ─────────────────────────────────────────────────────────────────────────────
+    // 5. ADD THESE NEW PUBLIC METHODS (for friend notifications)
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Called by FriendManager when a friend request is received
+     */
+    public void showFriendRequestPopup(FriendRequest request) {
+        // Find the sender's RemotePlayer (if they're in the same room)
+        Entity.RemotePlayer sender = null;
+        synchronized (remotePlayers) {
+            sender = remotePlayers.get(request.getFromUsername());
+        }
+        
+        friendRequestPopup.show(request, sender);
+        repaint();
+    }
+
+    /**
+     * Called by FriendManager to show friend notifications
+     */
+    public void showFriendNotification(String message, boolean success) {
+        // Show as chat bubble above player
+        int bubbleY = player.spriteY + 50;
+        String prefix = success ? "[FRIEND] ✓ " : "[FRIEND] ";
+        player.messages.add(new Entity.Player.Message(prefix + message, bubbleY));
+        repaint();
+    }
+
 }

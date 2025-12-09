@@ -28,6 +28,9 @@ public class GameWindow {
     private static final Color ROOMS_BG_HOVER = new Color(102, 187, 106);  // ✨ NEW
     private static final Color SEND_BG = Color.WHITE;
     private static final Color SEND_BG_HOVER = new Color(230, 230, 230);
+
+    private static final Color FRIENDS_BG = new Color(156, 39, 176);  // Purple
+    private static final Color FRIENDS_BG_HOVER = new Color(186, 85, 211);
     
     // Components
     private final JFrame window;
@@ -36,6 +39,7 @@ public class GameWindow {
     private JButton sendButton;
     private JButton inventoryButton;
     private JButton roomsButton;  // ✨ NEW
+    private JButton friendsButton;
     
     // Placeholder text
     private static final String PLACEHOLDER = "type here to write a message";
@@ -88,12 +92,14 @@ public class GameWindow {
         // Create components
         inventoryButton = createInventoryButton();
         roomsButton = createRoomsButton();  // ✨ NEW
+        friendsButton = createFriendsButton();
         messageField = createMessageField();
         sendButton = createSendButton();
         
         // Add to inner panel
         innerPanel.add(inventoryButton);
         innerPanel.add(roomsButton);  // ✨ NEW - Add rooms button
+        innerPanel.add(friendsButton); 
         innerPanel.add(messageField);
         innerPanel.add(sendButton);
         
@@ -185,6 +191,45 @@ public class GameWindow {
         // Action
         button.addActionListener(e -> {
             gamePanel.roomNavigator.toggle();
+            gamePanel.repaint();
+        });
+        
+        return button;
+    }
+
+
+    //NEW METHOD
+    private JButton createFriendsButton() {
+        JButton button = createStyledButton("FRIENDS", 120, 35, FRIENDS_BG);
+        
+        // Try to load friends icon
+        try {
+            ImageIcon originalIcon = new ImageIcon("src/res/icons/friends_icon.png");
+            Image scaledImage = originalIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+            button.setIcon(new ImageIcon(scaledImage));
+        } catch (Exception e) {
+            // Fallback: just use text
+            System.out.println("Friends icon not found - using text only");
+        }
+        
+        // White text on purple background
+        button.setForeground(Color.WHITE);
+        
+        // Hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setBackground(FRIENDS_BG_HOVER);
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setBackground(FRIENDS_BG);
+            }
+        });
+        
+        // Action - toggle friends panel
+        button.addActionListener(e -> {
+            gamePanel.friendsPanel.toggle();
             gamePanel.repaint();
         });
         

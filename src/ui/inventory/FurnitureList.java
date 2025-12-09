@@ -19,7 +19,7 @@ public class FurnitureList {
     }
     
     private void loadFurnitureFromRes() {
-        // TODO: Dynamically scan /res folder for PNG files
+      //  TODO: Dynamically scan /res folder for PNG files
         items.add(new Furniture("Chair", "/res/tile/Chair_base.png", 1, 1));
         // Add more furniture as needed
     }

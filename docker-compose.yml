@@ -3,7 +3,7 @@ services:
   kafka:
     image: apache/kafka:4.1.0
     hostname: kafka
-    container_name: kafka
+    container_name: kafka-futura
     ports:
       - "9092:9092"
     environment:
