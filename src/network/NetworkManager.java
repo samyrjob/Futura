@@ -145,8 +145,41 @@ public class NetworkManager {
             System.err.println("Error disconnecting: " + e.getMessage());
         }
     }
+
     
+    /**
+     * Send a friend request via game server (fallback when Kafka unavailable)
+     */
+    public void sendFriendRequest(String targetUsername) {
+        if (connected && out != null) {
+            String message = "friendRequest " + targetUsername;
+            out.println(message);
+            System.out.println("[NETWORK] Sent friend request to: " + targetUsername);
+        } else {
+            System.err.println("[NETWORK] Cannot send friend request - not connected");
+        }
+    }
+
+        /**
+     * Send friend response via game server (fallback when Kafka unavailable)
+     */
+    public void sendFriendResponse(String targetUsername, boolean accepted) {
+        if (connected && out != null) {
+            String response = accepted ? "accept" : "reject";
+            String message = "friendResponse " + targetUsername + " " + response;
+            out.println(message);
+            System.out.println("[NETWORK] Sent friend response to " + targetUsername + ": " + response);
+        } else {
+            System.err.println("[NETWORK] Cannot send friend response - not connected");
+        }
+    }
+
+
+    
+    /**
+     * Check if network is connected
+     */
     public boolean isConnected() {
-        return connected;
+        return connected && socket != null && !socket.isClosed();
     }
 }
