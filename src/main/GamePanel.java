@@ -207,24 +207,24 @@ public class GamePanel extends JPanel implements Runnable {
         addMouseListener(new GameMouseListener());
         addMouseMotionListener(new GameMouseMotionListener());
           
-    // ✨ ADD THIS - Keyboard listener
-    addKeyListener(new java.awt.event.KeyAdapter() {
-        @Override
-        public void keyPressed(java.awt.event.KeyEvent e) {
-            if (ui == null) return;
-            
-            switch (e.getKeyCode()) {
-                case java.awt.event.KeyEvent.VK_UP:
-                    ui.increaseVolume();  // Arrow UP = volume up
-                    repaint();
-                    break;
-                case java.awt.event.KeyEvent.VK_DOWN:
-                    ui.decreaseVolume();  // Arrow DOWN = volume down
-                    repaint();
-                    break;
+        // ✨ ADD THIS - Keyboard listener
+        addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (ui == null) return;
+                
+                switch (e.getKeyCode()) {
+                    case java.awt.event.KeyEvent.VK_UP:
+                        ui.getMusicPlayer().increaseVolume(); // Arrow UP = volume up
+                        repaint();
+                        break;
+                    case java.awt.event.KeyEvent.VK_DOWN:
+                        ui.getMusicPlayer().decreaseVolume();  // Arrow DOWN = volume down
+                        repaint();
+                        break;
+                }
             }
-        }
-    });
+        });
     }
     
     private void initializeMultiplayer() {
@@ -735,10 +735,10 @@ public class GamePanel extends JPanel implements Runnable {
         }
     
            // ✨ ADD THIS - Update music player hover states
-        if (ui != null) {
-            ui.updatePlayButtonHover(mouseX, mouseY);
-            ui.updateStopButtonHover(mouseX, mouseY);
-        }
+        // if (ui != null) {
+        //     musicPlayer.updatePlayButtonHover(mouseX, mouseY);
+        //     musicPlayer.updateStopButtonHover(mouseX, mouseY);
+        // }
         // ✨ NEW - Check room navigator FIRST (highest priority)
         if (roomNavigator.isVisible() && roomNavigator.containsPoint(mouseX, mouseY)) {
             roomNavigator.handleClick(e.getX(), e.getY());
@@ -801,37 +801,11 @@ public class GamePanel extends JPanel implements Runnable {
         int mouseY = e.getY();
 
         // ✨ Music player clicks (at the very beginning)
-    if (ui != null) {
-        if (ui.isPlayButtonClicked(mouseX, mouseY)) {
-            if (sound != null) {
-                sound.togglePlayPause();
-            }
+        if (ui != null && ui.handleClick(mouseX, mouseY)) {
             repaint();
             return;
         }
-        
-        if (ui.isStopButtonClicked(mouseX, mouseY)) {
-            if (sound != null) {
-                sound.stop();
-            }
-            repaint();
-            return;
-        }
-        
-        // ✨ ADD THESE - Volume button clicks
-        if (ui.isVolumeUpClicked(mouseX, mouseY)) {
-            ui.increaseVolume();  // +10%
-            repaint();
-            return;
-        }
-        
-        if (ui.isVolumeDownClicked(mouseX, mouseY)) {
-            ui.decreaseVolume();  // -10%
-            repaint();
-            return;
-        }
-    }
-        
+                
         
         // ✨ NEW - Check room navigator first
         if (roomNavigator.isVisible() && roomNavigator.containsPoint(mouseX, mouseY)) {
@@ -980,11 +954,10 @@ public class GamePanel extends JPanel implements Runnable {
 
         // ✨ UPDATE THIS - Add volume button hovers
         if (ui != null) {
-            ui.updatePlayButtonHover(mouseX, mouseY);
-            ui.updateStopButtonHover(mouseX, mouseY);
-            ui.updateVolumeUpHover(mouseX, mouseY);    // ✨ ADD THIS
-            ui.updateVolumeDownHover(mouseX, mouseY);  // ✨ ADD THIS
+            ui.handleMouseMove(mouseX, mouseY);
         }
+
+    
         
         // ✨ NEW - Update room navigator hover state
         if (roomNavigator.isVisible()) {
