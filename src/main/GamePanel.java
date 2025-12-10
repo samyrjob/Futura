@@ -14,7 +14,7 @@ import ui.profile.Profile;
 import ui.profile.RemoteProfile;
 import ui.UI;
 import ui.hud.TileHighlighter;
-import ui.inventory.InventoryWindow;
+import view.inventory.InventoryWindow;
 import ui.room.RoomNavigator;  // ✨ NEW IMPORT
 import network.NetworkManager;
 import room.RoomManager;  // ✨ NEW IMPORT

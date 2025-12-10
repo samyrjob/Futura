@@ -1,4 +1,4 @@
-package ui.inventory;
+package view.inventory;
 
 import java.awt.*;
 
