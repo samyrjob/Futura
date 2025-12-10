@@ -723,10 +723,10 @@ public class GamePanel extends JPanel implements Runnable {
         if (roomNavigator.isVisible()) {
             roomNavigator.handleMousePressed(e.getX(), e.getY());
             if (roomNavigator.isDragging()) {
-                return;  // Don't process other clicks while starting drag
+                return;
             }
-            if (roomNavigator.containsPoint(e.getX(), e.getY())){
-
+            // Only block if click is actually ON the navigator window
+            if (roomNavigator.containsPoint(e.getX(), e.getY())) {
                 roomNavigator.handleClick(e.getX(), e.getY());
                 repaint();
                 return;
@@ -739,7 +739,7 @@ public class GamePanel extends JPanel implements Runnable {
             ui.updateStopButtonHover(mouseX, mouseY);
         }
         // ✨ NEW - Check room navigator FIRST (highest priority)
-        if (roomNavigator.isVisible()) {
+        if (roomNavigator.isVisible() && roomNavigator.containsPoint(mouseX, mouseY)) {
             roomNavigator.handleClick(e.getX(), e.getY());
             repaint();
             return;
