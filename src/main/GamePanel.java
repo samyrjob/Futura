@@ -30,6 +30,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 
 import service.kafka.KafkaService;
+import sound.Sound;
 
 /**
  * GamePanel - Main game coordinator and rendering surface
@@ -93,7 +94,7 @@ public class GamePanel extends JPanel implements Runnable {
     private TileHighlighter handleMouseHover;
     
     // Audio (paused)
-    public Sound sound;
+    public sound.Sound sound;
     private Sound se;
 
     // friend request fields
