@@ -429,4 +429,12 @@ public class RoomNavigator {
                 return new ArrayList<>();
         }
     }
+
+
+    public boolean containsPoint(int x, int y) {
+    return x >= windowX && x <= windowX + WINDOW_WIDTH &&
+           y >= windowY && y <= windowY + WINDOW_HEIGHT;
+    }
+
+    
 }

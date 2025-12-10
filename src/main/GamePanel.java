@@ -725,9 +725,12 @@ public class GamePanel extends JPanel implements Runnable {
             if (roomNavigator.isDragging()) {
                 return;  // Don't process other clicks while starting drag
             }
-            roomNavigator.handleClick(e.getX(), e.getY());
-            repaint();
-            return;
+            if (roomNavigator.containsPoint(e.getX(), e.getY())){
+
+                roomNavigator.handleClick(e.getX(), e.getY());
+                repaint();
+                return;
+            }
         }
     
            // ✨ ADD THIS - Update music player hover states
