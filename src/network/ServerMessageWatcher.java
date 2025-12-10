@@ -189,13 +189,13 @@ public class ServerMessageWatcher extends Thread {
         
         // ✨ ACTUALLY change the room on the client side
         javax.swing.SwingUtilities.invokeLater(() -> {
-            if (gamePanel.roomManager != null) {
+            if (gamePanel.roomController != null) {
                 // Check if room exists
-                room.Room targetRoom = gamePanel.roomManager.getRoom(targetRoomId);
+                model.room.Room targetRoom = gamePanel.roomController.getRoom(targetRoomId);
                 
                 if (targetRoom != null) {
                     // Room exists - enter it
-                    boolean success = gamePanel.roomManager.enterRoom(targetRoomId, gamePanel.player.name);
+                    boolean success = gamePanel.roomController.enterRoom(targetRoomId, gamePanel.player.name);
                     
                     if (success) {
                         System.out.println("[CLIENT] Successfully moved to room: " + targetRoomId);
@@ -208,7 +208,7 @@ public class ServerMessageWatcher extends Thread {
                 } else {
                     // Room doesn't exist on client - go to lobby instead
                     System.out.println("[CLIENT] Room not found locally, going to lobby");
-                    gamePanel.roomManager.returnToLobby();
+                    gamePanel.roomController.returnToLobby();
                     showAdminNotification("Admin moved you - room not found, returned to lobby");
                 }
                 
@@ -220,7 +220,7 @@ public class ServerMessageWatcher extends Thread {
                 // Repaint to show changes
                 gamePanel.repaint();
             } else {
-                System.err.println("[CLIENT] RoomManager is null!");
+                System.err.println("[CLIENT] RoomController is null!");
             }
         });
     }
@@ -263,9 +263,9 @@ public class ServerMessageWatcher extends Thread {
         
         javax.swing.SwingUtilities.invokeLater(() -> {
             // ✨ Instead of disconnecting, move player to lobby
-            if (gamePanel.roomManager != null) {
+            if (gamePanel.roomController != null) {
                 // Return to lobby
-                gamePanel.roomManager.returnToLobby();
+                gamePanel.roomController.returnToLobby();
                 
                 // Reset player position
                 gamePanel.player.movement.xCurrent = 4;
