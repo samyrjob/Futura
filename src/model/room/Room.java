@@ -118,7 +118,7 @@ public class Room {
         int[][] map = new int[width][height];
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                map[x][y] = 1; // Default floor tile
+                map[x][y] = 0; // Default 1 floor tile is grass but 0 is wooden floor
             }
         }
         return map;
