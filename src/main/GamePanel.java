@@ -475,8 +475,6 @@ public class GamePanel extends JPanel implements Runnable {
     // ═══════════════════════════════════════════════════════════
     
     public void setupGame() {
-        // Initialize friend system (MVC)
-        initializeFriendSystem();
         
         // Connect to multiplayer server
         connectToServer();
