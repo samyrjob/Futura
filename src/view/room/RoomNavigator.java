@@ -1,4 +1,4 @@
-package ui.room;
+package view.room;
 
 import main.GamePanel;
 import room.Room;
