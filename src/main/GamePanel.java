@@ -2,6 +2,7 @@ package main;
 
 
 import controller.friend.FriendController;
+import controller.room.RoomController;
 import model.friend.FriendRequest;
 import view.friend.FriendsPanel;
 import view.friend.FriendRequestPopup;
@@ -17,7 +18,6 @@ import ui.hud.TileHighlighter;
 import view.inventory.InventoryWindow;
 import view.room.RoomNavigator;
 import network.NetworkManager;
-import room.RoomManager;  // ✨ NEW IMPORT
 import tile.TileManager;
 import object.FurnitureManager;
 import java.awt.event.MouseEvent;
@@ -80,7 +80,7 @@ public class GamePanel extends JPanel implements Runnable {
     public TileManager tile_manager;
     public FurnitureManager furnitureManager;
     public NetworkManager networkManager;
-    public RoomManager roomManager;  // ✨ NEW - Room system
+    public RoomController roomController;  // ✨ NEW - Room system
     
     // UI Components
     private UI ui;
@@ -186,7 +186,7 @@ public class GamePanel extends JPanel implements Runnable {
         this.handleMouseHover = new TileHighlighter(this);
         
         // ✨ NEW - Initialize room system AFTER other managers
-        this.roomManager = new RoomManager(this);
+        this.roomController = new RoomController(this);
     }
     
     private void initializeUI() {
@@ -196,7 +196,7 @@ public class GamePanel extends JPanel implements Runnable {
         this.inventoryWindow = new InventoryWindow(this);
         
         // ✨ NEW - Initialize room navigator AFTER roomManager exists
-        this.roomNavigator = new RoomNavigator(this, roomManager);
+        this.roomNavigator = new RoomNavigator(this, roomController);
     }
     
     private void initializeInput() {

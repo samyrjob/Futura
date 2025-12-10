@@ -1,11 +1,12 @@
 package view.room;
 
 import main.GamePanel;
-import room.Room;
-import room.RoomManager;
+import model.room.Room;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import controller.room.RoomController;
 
 /**
  * UI for navigating between rooms (like Habbo Hotel room navigator)
@@ -13,7 +14,7 @@ import java.util.List;
 public class RoomNavigator {
     
     private GamePanel gp;
-    private RoomManager roomManager;
+    private RoomController roomController;
     private boolean visible;
     
     // Window dimensions
@@ -52,9 +53,9 @@ public class RoomNavigator {
     private static final Color ROOM_ITEM_HOVER = new Color(200, 220, 255);
     private static final Color CURRENT_ROOM = new Color(144, 238, 144);
     
-    public RoomNavigator(GamePanel gp, RoomManager roomManager) {
+    public RoomNavigator(GamePanel gp, RoomController roomController) {
         this.gp = gp;
-        this.roomManager = roomManager;
+        this.roomController = roomController;
         this.visible = false;
         this.currentTab = Tab.PUBLIC_ROOMS;
         
@@ -235,7 +236,7 @@ public class RoomNavigator {
     private void createNewRoom() {
         String roomName = promptForRoomName();
         if (roomName != null && !roomName.trim().isEmpty()) {
-            Room newRoom = roomManager.createRoom(roomName, gp.player.name);
+            Room newRoom = roomController.createRoom(roomName, gp.player.name);
             currentTab = Tab.MY_ROOMS;
             System.out.println("Created room: " + newRoom.getRoomName());
         }
@@ -251,7 +252,7 @@ public class RoomNavigator {
     }
     
     private void enterRoom(Room room) {
-        boolean success = roomManager.enterRoom(room.getRoomId(), gp.player.name);
+        boolean success = roomController.enterRoom(room.getRoomId(), gp.player.name);
         if (success) {
             visible = false;
             System.out.println("Entering room: " + room.getRoomName());
@@ -354,7 +355,7 @@ public class RoomNavigator {
     
     private void drawRoomItem(Graphics2D g2d, Room room, int x, int y, int width) {
         boolean isHovered = (room == hoveredRoom);
-        boolean isCurrent = room.getRoomId().equals(roomManager.getCurrentRoomId());
+        boolean isCurrent = room.getRoomId().equals(roomController.getCurrentRoomId());
         
         if (isCurrent) {
             g2d.setColor(CURRENT_ROOM);
@@ -421,9 +422,9 @@ public class RoomNavigator {
     private List<Room> getRoomsForCurrentTab() {
         switch (currentTab) {
             case PUBLIC_ROOMS:
-                return roomManager.getPublicRooms();
+                return roomController.getPublicRooms();
             case MY_ROOMS:
-                return roomManager.getMyRooms(gp.player.name);
+                return roomController.getMyRooms(gp.player.name);
             default:
                 return new ArrayList<>();
         }
