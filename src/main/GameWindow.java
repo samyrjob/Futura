@@ -29,8 +29,8 @@ public class GameWindow {
     private static final Color SEND_BG = Color.WHITE;
     private static final Color SEND_BG_HOVER = new Color(230, 230, 230);
 
-    private static final Color FRIENDS_BG = new Color(156, 39, 176);  // Purple
-    private static final Color FRIENDS_BG_HOVER = new Color(186, 85, 211);
+    private static final Color FRIENDS_BG = new Color(30, 30, 30);  // Dark/Black
+    private static final Color FRIENDS_BG_HOVER = new Color(60, 60, 60);  // Lighter on hover
     
     // Components
     private final JFrame window;
@@ -200,7 +200,7 @@ public class GameWindow {
 
     //NEW METHOD
     private JButton createFriendsButton() {
-        JButton button = createStyledButton("FRIENDS", 120, 35, FRIENDS_BG);
+        JButton button = createStyledButton("FRIENDS", 110, 35, FRIENDS_BG);
         
         // Try to load friends icon
         try {
@@ -213,7 +213,7 @@ public class GameWindow {
         }
         
         // White text on purple background
-        button.setForeground(Color.WHITE);
+        button.setForeground(Color.BLACK);
         
         // Hover effect
         button.addMouseListener(new java.awt.event.MouseAdapter() {
