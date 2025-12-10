@@ -90,17 +90,17 @@ public class RemoteProfile {
     }
     
     private void sendFriendRequest() {
-        if (gp.friendManager == null || remotePlayer == null) return;
+        if (gp.friendController == null || remotePlayer == null) return;
         
         // Check if already friends
-        if (gp.friendManager.isFriend(remotePlayer.name)) {
+        if (gp.friendController.isFriend(remotePlayer.name)) {
             System.out.println("[REMOTE PROFILE] Already friends with: " + remotePlayer.name);
             showNotification("Already friends with " + remotePlayer.name, false);
             return;
         }
         
         // Send request
-        boolean sent = gp.friendManager.sendFriendRequest(remotePlayer.name, remotePlayer.gender.toString());
+        boolean sent = gp.friendController.sendFriendRequest(remotePlayer.name, remotePlayer.gender.toString());
         
         if (sent) {
             showNotification("Friend request sent to " + remotePlayer.name + "!", true);
@@ -201,7 +201,7 @@ public class RemoteProfile {
         friendButtonY = profileY + 115;
         
         // Check friendship status
-        boolean alreadyFriends = gp.friendManager != null && gp.friendManager.isFriend(remotePlayer.name);
+        boolean alreadyFriends = gp.friendController != null && gp.friendController.isFriend(remotePlayer.name);
         
         if (alreadyFriends) {
             // Show "Already Friends" label (green)

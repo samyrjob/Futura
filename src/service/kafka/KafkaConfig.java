@@ -1,8 +1,10 @@
-package kafka;
+package service.kafka;
 
 /**
  * Kafka 4.1 configuration constants
  * KRaft mode - No ZooKeeper required!
+ * 
+ * Part of Service Layer - handles external system integration
  */
 public class KafkaConfig {
     
@@ -13,6 +15,10 @@ public class KafkaConfig {
     public static final String TOPIC_FRIEND_REQUESTS = "futura-friend-requests";
     public static final String TOPIC_FRIEND_RESPONSES = "futura-friend-responses";
     public static final String TOPIC_FRIEND_STATUS = "futura-friend-status";
+    
+    // Topics for room system (future use)
+    public static final String TOPIC_ROOM_EVENTS = "futura-room-events";
+    public static final String TOPIC_ROOM_CHAT = "futura-room-chat";
     
     // Consumer group prefix (each player gets unique group)
     public static final String CONSUMER_GROUP_PREFIX = "futura-client-";
@@ -26,4 +32,3 @@ public class KafkaConfig {
     public static final int MAX_RETRIES = 3;
     public static final int RETRY_BACKOFF_MS = 1000;
 }
-

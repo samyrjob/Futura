@@ -1,11 +1,10 @@
 package main;
 
 
-import friend.FriendManager;
-import friend.FriendRequest;
-import friend.FriendRequestPopup;
-import ui.friends.FriendsPanel;
-import kafka.FriendEventConsumer;
+import controller.friend.FriendController;
+import model.friend.FriendRequest;
+import view.friend.FriendsPanel;
+import view.friend.FriendRequestPopup;
 
 import Entity.Player;
 import Entity.RemotePlayer;
@@ -29,6 +28,8 @@ import java.util.Map;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
+
+import service.kafka.KafkaService;
 
 /**
  * GamePanel - Main game coordinator and rendering surface
@@ -97,11 +98,13 @@ public class GamePanel extends JPanel implements Runnable {
 
     // friend request fields
     //-------------------------------
-
-    public FriendManager friendManager;
+    public FriendController friendController;
     public FriendsPanel friendsPanel;
     public FriendRequestPopup friendRequestPopup;
-    private FriendEventConsumer kafkaConsumer;
+// NOTE: No more kafkaConsumer field - it's handled inside FriendController!
+
+    public KafkaService kafkaService;
+
     
     // ═══════════════════════════════════════════════════════════
     // MULTIPLAYER STATE
@@ -147,6 +150,7 @@ public class GamePanel extends JPanel implements Runnable {
         initializePanel();
         initializePlayer(username, genderStr);
         initializeManagers();
+        initializeFriendSystem();  // ✨ MOVE HERE - before UI and game loop
         initializeUI();
         initializeInput();
         initializeMultiplayer();
@@ -174,6 +178,9 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void initializeManagers() {
+
+
+
         this.tile_manager = new TileManager(this);
         this.furnitureManager = new FurnitureManager(this);
         this.handleMouseHover = new TileHighlighter(this);
@@ -223,21 +230,45 @@ public class GamePanel extends JPanel implements Runnable {
         this.remotePlayers = new HashMap<>();
         this.networkManager = new NetworkManager(this);
         this.player.setNetworkManager(networkManager);
+        
+        // Friend system is now initialized in initializeFriendSystem()
+        // Kafka is handled internally by FriendController!
+    }
 
-           // ✨ NEW - Start Kafka consumer for friend events
+
+        /**
+     * Initialize the Friend system (MVC pattern)
+     * Call this AFTER player is created
+     */
+    private void initializeFriendSystem() {
         try {
-            this.friendManager = new FriendManager(this, player.name);
-            this.kafkaConsumer = new FriendEventConsumer(friendManager, player.name);
-            kafkaConsumer.setFriendManager(friendManager);  // Make sure it's set
-            kafkaConsumer.start();
+            // Initialize Kafka service FIRST
+            this.kafkaService = new KafkaService(player.name);
             
-            System.out.println("[GAME] Kafka consumer started for friend events");
+            // Create controller (handles business logic)
+            this.friendController = new FriendController(
+                this, 
+                player.name, 
+                player.gender.toString()
+            );
+            
+            // Connect Kafka to controller and start
+            this.kafkaService.setFriendController(friendController);
+            this.kafkaService.start();
+            
+            // Create view components
+            this.friendsPanel = new FriendsPanel(this, friendController);
+            this.friendRequestPopup = new FriendRequestPopup(this, friendController);
+            
+            System.out.println("[GAME] Friend system initialized (MVC)");
         } catch (Exception e) {
-            System.err.println("[GAME] Failed to start Kafka consumer: " + e.getMessage());
-            System.err.println("[GAME] Friend requests will use server fallback");
+            System.err.println("[GAME] Failed to initialize friend system: " + e.getMessage());
+            e.printStackTrace();
         }
     }
-    
+
+
+        
     private void initializeMessageTimer() {
         messageTimer = new Timer(100, e -> updateMessages());
         messageTimer.start();
@@ -284,6 +315,7 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
     
+    // The update method stays mostly the same
     public void update() {
         player.update();
         
@@ -293,9 +325,14 @@ public class GamePanel extends JPanel implements Runnable {
             }
         }
 
-            // ✨ NEW - Update friend request popup (for auto-hide timeout)
+        // ✨ Update friend request popup (same as before)
         if (friendRequestPopup != null) {
             friendRequestPopup.update();
+        }
+        
+        // ✨ NEW - Update friends panel (for any animations)
+        if (friendsPanel != null) {
+            friendsPanel.update();
         }
     }
     
@@ -344,28 +381,31 @@ public class GamePanel extends JPanel implements Runnable {
     }
     
     private void drawUI(Graphics2D g2d) {
-        ui.draw(g2d);
-        
-        if (displayProfile) {
-            profile.draw(g2d);
-        }
-        
-        if (remoteProfile.isVisible()) {
-            remoteProfile.draw(g2d);
-        }
-        
-        inventoryWindow.drawPlacementPreview(g2d);
-        inventoryWindow.draw(g2d);
-        
-        // ✨ NEW - Draw room navigator (always last so it's on top)
-        roomNavigator.draw(g2d);
+    ui.draw(g2d);
+    
+    if (displayProfile) {
+        profile.draw(g2d);
+    }
+    
+    if (remoteProfile.isVisible()) {
+        remoteProfile.draw(g2d);
+    }
+    
+    inventoryWindow.drawPlacementPreview(g2d);
+    inventoryWindow.draw(g2d);
+    
+    // ✨ NEW - Draw room navigator (always last so it's on top)
+    roomNavigator.draw(g2d);
 
-                // ✨ NEW - Draw friends panel
+    // ✨ FIX - Add null checks for friend system (initialized later in setupGame)
+    if (friendsPanel != null) {
         friendsPanel.draw(g2d);
-        
-        // ✨ NEW - Draw friend request popup (ALWAYS LAST - on top of everything)
+    }
+    
+    if (friendRequestPopup != null) {
         friendRequestPopup.draw(g2d);
-        }
+    }
+}
     
     private void drawChatBubbles(Graphics2D g2d) {
         // Local player messages
@@ -435,9 +475,8 @@ public class GamePanel extends JPanel implements Runnable {
     // ═══════════════════════════════════════════════════════════
     
     public void setupGame() {
-        this.friendManager = new FriendManager(this, player.name);
-        this.friendsPanel = new FriendsPanel(this, friendManager);
-        this.friendRequestPopup = new FriendRequestPopup(this);
+        
+        // Connect to multiplayer server
         connectToServer();
     }
     
@@ -566,20 +605,20 @@ public class GamePanel extends JPanel implements Runnable {
     // ═══════════════════════════════════════════════════════════
     
     public void cleanup() {
-
         System.out.println("[GAME] Cleaning up...");
-    
-        // ✨ NEW - Shutdown friend system
-        if (friendManager != null) {
-            friendManager.shutdown();
+
+        // Shutdown friend system (controller handles Kafka internally)
+        if (friendsPanel != null) {
+            friendsPanel.shutdown();
         }
-        if (kafkaConsumer != null) {
-            kafkaConsumer.shutdown();
-        }
-    
+
         if (networkManager != null && multiplayerEnabled) {
             networkManager.sendByeMessage();
             networkManager.disconnect();
+        }
+
+          if (kafkaService != null) {
+            kafkaService.shutdown();
         }
     }
     
@@ -645,23 +684,30 @@ public class GamePanel extends JPanel implements Runnable {
 
         mouseX = e.getX();
         mouseY = e.getY();
-            // ✨ NEW - Check friend request popup FIRST (highest priority)
-        if (friendRequestPopup.isVisible()) {
-            if (friendRequestPopup.handleClick(mouseX, mouseY)) {
-                repaint();
-                return;
+
+        if (friendRequestPopup != null && friendRequestPopup.isVisible()) {
+                // ✨ NEW - Check friend request popup FIRST (highest priority)
+            if (friendRequestPopup.isVisible()) {
+                if (friendRequestPopup.handleClick(mouseX, mouseY)) {
+                    repaint();
+                    return;
+                }
             }
+    // ...
         }
-        
-        // ✨ NEW - Check friends panel
-        if (friendsPanel.isVisible()) {
-            friendsPanel.handleMousePressed(mouseX, mouseY);
-            if (friendsPanel.isDragging()) {
-                return;
-            }
-            if (friendsPanel.handleClick(mouseX, mouseY)) {
-                repaint();
-                return;
+
+        if (friendsPanel != null && friendsPanel.isVisible()) {
+        // ...
+            // ✨ NEW - Check friends panel
+            if (friendsPanel.isVisible()) {
+                friendsPanel.handleMousePressed(mouseX, mouseY);
+                if (friendsPanel.isDragging()) {
+                    return;
+                }
+                if (friendsPanel.handleClick(mouseX, mouseY)) {
+                    repaint();
+                    return;
+                }
             }
         }
         
@@ -728,7 +774,7 @@ public class GamePanel extends JPanel implements Runnable {
     private void handleMouseReleased(MouseEvent e) {
 
            // ✨ NEW - Friends panel release
-        if (friendsPanel.isVisible()) {
+        if (friendsPanel != null && friendsPanel.isVisible()) {
             friendsPanel.handleMouseReleased();
         }
 
@@ -914,12 +960,12 @@ public class GamePanel extends JPanel implements Runnable {
         mouseY = e.getY();
 
             // ✨ NEW - Update friend popup hover
-        if (friendRequestPopup.isVisible()) {
+        if (friendRequestPopup != null && friendRequestPopup.isVisible()) {
             friendRequestPopup.handleMouseMove(mouseX, mouseY);
         }
         
         // ✨ NEW - Update friends panel hover
-        if (friendsPanel.isVisible()) {
+        if (friendsPanel != null && friendsPanel.isVisible()) {
             friendsPanel.handleMouseMove(mouseX, mouseY);
         }
         
@@ -950,7 +996,7 @@ public class GamePanel extends JPanel implements Runnable {
 
     private void handleMouseWheelMoved(MouseWheelEvent e) {
     // ✨ NEW - Friends panel scrolling
-    if (friendsPanel.isVisible() && friendsPanel.containsPoint(e.getX(), e.getY())) {
+    if (friendsPanel != null && friendsPanel.isVisible() && friendsPanel.containsPoint(e.getX(), e.getY())) {
         friendsPanel.handleScroll(e.getWheelRotation());
         repaint();
         return;
@@ -969,7 +1015,7 @@ public class GamePanel extends JPanel implements Runnable {
      */
     public void showFriendRequestPopup(FriendRequest request) {
         // Find the sender's RemotePlayer (if they're in the same room)
-        Entity.RemotePlayer sender = null;
+        RemotePlayer sender = null;
         synchronized (remotePlayers) {
             sender = remotePlayers.get(request.getFromUsername());
         }

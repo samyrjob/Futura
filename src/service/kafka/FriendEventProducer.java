@@ -1,6 +1,6 @@
-package kafka;
+package service.kafka;
 
-import friend.FriendRequest;
+import model.friend.FriendRequest;
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
 
@@ -10,6 +10,11 @@ import java.util.concurrent.Future;
 /**
  * Kafka 4.1 Producer for sending friend events
  * Uses KRaft mode (no ZooKeeper)
+ * 
+ * Part of Service Layer - handles external messaging
+ * 
+ * Updated for MVC Architecture:
+ * - Uses model.friend.FriendRequest
  */
 public class FriendEventProducer {
     
@@ -169,4 +174,3 @@ public class FriendEventProducer {
         }
     }
 }
-

@@ -1,4 +1,4 @@
-package kafka;
+package service.kafka;
 
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.common.KafkaFuture;
@@ -9,6 +9,8 @@ import java.util.concurrent.ExecutionException;
 /**
  * Test Kafka 4.1 connection
  * Run this to verify Kafka is working before starting the game
+ * 
+ * Part of Service Layer - utility for testing external connections
  */
 public class KafkaConnectionTest {
     

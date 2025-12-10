@@ -1,7 +1,7 @@
-package kafka;
+package service.kafka;
 
-import friend.FriendManager;
-import friend.FriendRequest;
+import controller.friend.FriendController;
+import model.friend.FriendRequest;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -13,17 +13,23 @@ import java.util.Properties;
 /**
  * Kafka 4.1 Consumer for receiving friend events
  * Uses the new consumer rebalance protocol (KIP-848)
+ * 
+ * Part of Service Layer - handles external messaging
+ * 
+ * Updated for MVC Architecture:
+ * - Uses FriendController instead of FriendManager
+ * - Uses model.friend.FriendRequest
  */
 public class FriendEventConsumer extends Thread {
     
     private KafkaConsumer<String, String> consumer;
-    private FriendManager friendManager;
+    private FriendController friendController;
     private final String playerUsername;
     private volatile boolean running = true;
     
-    public FriendEventConsumer(FriendManager friendManager, String playerUsername) {
+    public FriendEventConsumer(FriendController friendController, String playerUsername) {
         super("FriendEventConsumer-" + playerUsername);
-        this.friendManager = friendManager;
+        this.friendController = friendController;
         this.playerUsername = playerUsername;
         
         initializeConsumer();
@@ -136,13 +142,13 @@ public class FriendEventConsumer extends Thread {
                 // Someone sent us a friend request
                 if (request.getType() == FriendRequest.RequestType.SEND_REQUEST) {
                     System.out.println("[KAFKA CONSUMER] 💬 Friend request from: " + request.getFromUsername());
-                    friendManager.receiveRequest(request);
+                    friendController.receiveRequest(request);
                 }
             } else if (topic.equals(KafkaConfig.TOPIC_FRIEND_RESPONSES)) {
                 // Response to our friend request
                 System.out.println("[KAFKA CONSUMER] 📬 Friend response from: " + request.getFromUsername() + 
                                   " - " + request.getType());
-                friendManager.handleResponse(request);
+                friendController.handleResponse(request);
             }
         } catch (Exception e) {
             System.err.println("[KAFKA CONSUMER] Failed to parse message: " + e.getMessage());
@@ -169,7 +175,7 @@ public class FriendEventConsumer extends Thread {
         }
     }
 
-    public void setFriendManager(FriendManager manager) {
-        this.friendManager = manager;
+    public void setFriendController(FriendController controller) {
+        this.friendController = controller;
     }
 }
