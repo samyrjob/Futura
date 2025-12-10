@@ -833,7 +833,7 @@ public class GamePanel extends JPanel implements Runnable {
         
         
         // ✨ NEW - Check room navigator first
-        if (roomNavigator.isVisible()) {
+        if (roomNavigator.isVisible() && roomNavigator.containsPoint(mouseX, mouseY)) {
             // Already handled in handleMousePressed
             return;
         }
