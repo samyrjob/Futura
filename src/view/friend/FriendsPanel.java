@@ -45,6 +45,11 @@ public class FriendsPanel extends BaseToolbarPanel {
         super(gp);
         this.controller = controller;
         this.friendsRenderer = (FriendsPanelRenderer) renderer;
+
+          // ✨ FIX: Set controller on renderer AFTER super() completes
+        this.friendsRenderer.setController(controller);
+
+        
         this.hoveredFriend = null;
         this.selectedFriendIndex = -1;
         

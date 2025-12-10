@@ -21,7 +21,7 @@ public class FriendsPanelRenderer implements PanelRenderer {
     // DEPENDENCIES
     // ═══════════════════════════════════════════════════════════
     
-    private final FriendController controller;
+    private FriendController controller;  // NOT final - set after construction
     
     // ═══════════════════════════════════════════════════════════
     // RENDER STATE (set by panel before each render)
@@ -40,6 +40,19 @@ public class FriendsPanelRenderer implements PanelRenderer {
         this.scrollOffset = 0;
         this.hoveredFriend = null;
         this.selectedIndex = -1;
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // CONTROLLER SETTER (for post-construction initialization)
+    // ═══════════════════════════════════════════════════════════
+    
+    /**
+     * Set the controller after construction.
+     * This is needed due to Java's initialization order when 
+     * super() calls createRenderer() before subclass fields are set.
+     */
+    public void setController(FriendController controller) {
+        this.controller = controller;
     }
     
     // ═══════════════════════════════════════════════════════════
@@ -64,6 +77,11 @@ public class FriendsPanelRenderer implements PanelRenderer {
     
     @Override
     public void render(Graphics2D g2d, BasePanelLayout baseLayout, boolean hoverCloseButton) {
+        // Skip rendering if controller not yet set
+        if (controller == null) {
+            return;
+        }
+        
         FriendsPanelLayout layout = (FriendsPanelLayout) baseLayout;
         
         // Draw window components (using default implementations)
@@ -80,10 +98,9 @@ public class FriendsPanelRenderer implements PanelRenderer {
     // FRIENDS-SPECIFIC RENDERING
     // ═══════════════════════════════════════════════════════════
     
-    /**
-     * Draw the friend count badge in header
-     */
     private void drawFriendCount(Graphics2D g2d, FriendsPanelLayout layout) {
+        if (controller == null) return;
+        
         int count = controller.getFriendCount();
         int badgeX = layout.getWindowX() + FriendsPanelLayout.BADGE_X_OFFSET;
         int badgeY = layout.getWindowY() + FriendsPanelLayout.BADGE_Y_OFFSET;
@@ -91,10 +108,9 @@ public class FriendsPanelRenderer implements PanelRenderer {
         drawBadge(g2d, badgeX, badgeY, count, layout.getHeaderColor());
     }
     
-    /**
-     * Draw the friends list
-     */
     private void drawFriendsList(Graphics2D g2d, FriendsPanelLayout layout) {
+        if (controller == null) return;
+        
         List<Friend> friends = controller.getFriends();
         Rectangle content = layout.getContentBounds();
         
@@ -132,9 +148,6 @@ public class FriendsPanelRenderer implements PanelRenderer {
         }
     }
     
-    /**
-     * Draw a single friend item
-     */
     private void drawFriendItem(Graphics2D g2d, FriendsPanelLayout layout, 
                                 Friend friend, int x, int y, int width,
                                 boolean isHovered, boolean isSelected) {
@@ -157,9 +170,6 @@ public class FriendsPanelRenderer implements PanelRenderer {
         drawGenderIcon(g2d, layout, friend, x, y, width);
     }
     
-    /**
-     * Draw the online/offline status indicator
-     */
     private void drawStatusIndicator(Graphics2D g2d, FriendsPanelLayout layout, Friend friend, int itemY) {
         Point pos = layout.getStatusIndicatorPosition(itemY);
         int size = FriendsPanelLayout.STATUS_INDICATOR_SIZE;
@@ -175,9 +185,6 @@ public class FriendsPanelRenderer implements PanelRenderer {
         g2d.fillOval(pos.x, pos.y, size, size);
     }
     
-    /**
-     * Draw the status text (Online/Offline/In room)
-     */
     private void drawStatusText(Graphics2D g2d, FriendsPanelLayout layout, Friend friend, int x, int y) {
         g2d.setFont(BasePanelLayout.ITEM_SUBTITLE_FONT);
         
@@ -195,9 +202,6 @@ public class FriendsPanelRenderer implements PanelRenderer {
                       y + FriendsPanelLayout.FRIEND_STATUS_Y_OFFSET);
     }
     
-    /**
-     * Draw the gender icon
-     */
     private void drawGenderIcon(Graphics2D g2d, FriendsPanelLayout layout, 
                                Friend friend, int x, int y, int width) {
         g2d.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
