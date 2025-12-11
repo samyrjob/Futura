@@ -453,6 +453,7 @@ import model.room.Room;
 import main.GameConstants;
 import main.GamePanel;
 import service.api.RoomApiClient;
+import service.websocket.RoomWebSocketClient;
 
 import java.util.*;
 
@@ -475,6 +476,11 @@ public class RoomController {
     
     // Event listeners
     private List<RoomChangeListener> listeners;
+
+// ═══════════════════════════════════════════════════════════
+// WEBSOCKET CLIENT
+// ═══════════════════════════════════════════════════════════
+    private RoomWebSocketClient webSocketClient;
     
     // ═══════════════════════════════════════════════════════════
     // LISTENER INTERFACE
@@ -986,5 +992,44 @@ public class RoomController {
         
         listeners.clear();
         roomCache.clear();
+    }
+
+
+
+
+
+// ═══════════════════════════════════════════════════════════
+// WEBSOCKET CLIENT
+// ═══════════════════════════════════════════════════════════
+        /**
+     * Start WebSocket connection for live updates
+     */
+    public void startLiveUpdates() {
+        if (webSocketClient == null) {
+            webSocketClient = new RoomWebSocketClient(this);
+        }
+        webSocketClient.connect();
+        System.out.println("[ROOM CTRL] Live updates started");
+    }
+
+    /**
+     * Stop WebSocket connection
+     */
+    public void stopLiveUpdates() {
+        if (webSocketClient != null) {
+            webSocketClient.disconnect();
+        }
+    }
+
+    /**
+     * Update player count for a room (called from WebSocket)
+     */
+    public void updatePlayerCount(String roomId, int count) {
+        Room room = roomCache.get(roomId);
+        if (room != null) {
+            room.setCurrentPlayerCount(count);
+            notifyRoomListChanged();
+            System.out.println("[ROOM CTRL] Updated player count: " + roomId + " = " + count);
+        }
     }
 }
