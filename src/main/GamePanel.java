@@ -280,8 +280,8 @@ public class GamePanel extends JPanel implements Runnable {
     private void initializeMusic() {
         // Load the song
         sound = new Sound();
-        // sound.setFile("src\\res\\sound\\Move For Me - DJ XOXO _ New Summer Dance Hit 2025.wav");  // Update path to your file
-        sound.setFile("src\\res\\sound\\becky_g_arranca.wav");  // Update path to your file
+        sound.setFile("src\\res\\sound\\Move For Me - DJ XOXO _ New Summer Dance Hit 2025.wav");  // Update path to your file
+        // sound.setFile("src\\res\\sound\\becky_g_arranca.wav");  // Update path to your file
 
         // Start playing on loop
         sound.loop();
