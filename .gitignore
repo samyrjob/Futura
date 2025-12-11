@@ -1,0 +1,84 @@
+### IntelliJ IDEA ###
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+src/admin/AdminServer.java
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+
+
+## installer output directory
+/installer_output/
+
+# ═══════════════════════════════════════════════════════════════
+# COMPILED FILES
+# ═══════════════════════════════════════════════════════════════
+bin/
+out/
+target/
+*.class
+
+# ═══════════════════════════════════════════════════════════════
+# DATA FILES (user-specific, regenerated at runtime)
+# ═══════════════════════════════════════════════════════════════
+
+data/
+*.log
+
+# ═══════════════════════════════════════════════════════════════
+# IDE FILES
+# ═══════════════════════════════════════════════════════════════
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+
+# ═══════════════════════════════════════════════════════════════
+# OS FILES
+# ═══════════════════════════════════════════════════════════════
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ═══════════════════════════════════════════════════════════════
+# SENSITIVE / SECRETS (NEVER COMMIT!)
+# ═══════════════════════════════════════════════════════════════
+*.env
+secrets.properties
+credentials.json
+config/local.properties
+
+# ═══════════════════════════════════════════════════════════════
+# LARGE FILES
+# ═══════════════════════════════════════════════════════════════
+*.wav
+*.mp3
+*.zip
+*.jar
+lib/
+build/
