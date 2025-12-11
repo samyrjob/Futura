@@ -2,6 +2,7 @@
 TO launch the game:
 
 java -cp bin main.Main "futura://open?user=Joe&gender=male"
+UPDATE -> java -cp "bin;lib/*" main.Main "futura://open?user=TRUMP&gender=male" (because include jar files to activate kafka)
 
 
 To launch the server:

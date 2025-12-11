@@ -1,0 +1,14 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Classes\futura]
+@="URL:Futura Protocol"
+"URL Protocol"=""
+
+[HKEY_CURRENT_USER\Software\Classes\futura\shell]
+
+[HKEY_CURRENT_USER\Software\Classes\futura\shell\open]
+
+[HKEY_CURRENT_USER\Software\Classes\futura\shell\open\command]
+@="\"C:\\Users\\notre\\OneDrive - University of Chester\\isometric project\\Isometric2d\\futura-launcher.bat\" \"%1\""
+
+
