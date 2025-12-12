@@ -343,46 +343,38 @@ public class RoomController {
     // UPDATE GAME STATE FOR ROOM
     // ═══════════════════════════════════════════════════════════
 
-    private void updateGameForRoom() {
-        if (currentRoom == null || gp == null) return;
-        
-        System.out.println("[ROOM CTRL] Updating game for room: " + currentRoom.getRoomName());
-        
-        // 1. Load room's tile map if available
-        if (currentRoom.getTileMap() != null && gp.tile_manager != null) {
-            int[][] tileMap = currentRoom.getTileMap();
-            gp.tile_manager.setMapTileNum(tileMap);
-            System.out.println("[ROOM CTRL] Loaded custom tile map");
-        } else {
-            gp.tile_manager.loadMap("/res/maps/map01.txt");
-            System.out.println("[ROOM CTRL] Loaded default tile map");
-        }
-        
-        // 2. Reset player position to room center
-        int spawnX = currentRoom.getWidth() / 2;
-        int spawnY = currentRoom.getHeight() / 2;
-        
-        if (gp.player != null) {
-            gp.player.setPosition(spawnX, spawnY);
-            System.out.println("[ROOM CTRL] Player spawned at tile: " + spawnX + ", " + spawnY);
-        }
-        
-        // 3. Clear remote players (they're in a different room now)
-        gp.removeAllRemotePlayers();
-        
-        // ═══════════════════════════════════════════════════════════
-        // 4. ✅ FIXED - Actually notify server of room change!
-        // ═══════════════════════════════════════════════════════════
-        if (gp.networkManager != null && gp.networkManager.isConnected()) {
-            gp.networkManager.sendRoomChange(currentRoomId);
-            System.out.println("[ROOM CTRL] ✅ Notified server of room change to: " + currentRoomId);
-        }
-        
-        // 5. Force repaint
-        gp.repaint();
-        
-        System.out.println("[ROOM CTRL] ✅ Game updated for room: " + currentRoom.getRoomName());
+private void updateGameForRoom() {
+    if (currentRoom == null || gp == null) return;
+    
+    System.out.println("[ROOM CTRL] Updating game for room: " + currentRoom.getRoomName());
+    
+    // 1. Load room's tile map
+    if (currentRoom.getTileMap() != null && gp.tile_manager != null) {
+        int[][] tileMap = currentRoom.getTileMap();
+        gp.tile_manager.setMapTileNum(tileMap);
+    } else {
+        gp.tile_manager.loadMap("/res/maps/map01.txt");
     }
+    
+    // ═══════════════════════════════════════════════════════════
+    // 2. ✅ FIXED - Spawn at CORNER (0,0) like Habbo Hotel!
+    // ═══════════════════════════════════════════════════════════
+    if (gp.player != null) {
+        gp.player.setPosition(0, 0);  // ✅ CORNER, not center!
+        System.out.println("[ROOM CTRL] Player spawned at corner (0,0)");
+    }
+    
+    // 3. Clear remote players
+    gp.removeAllRemotePlayers();
+    
+    // 4. Notify server of room change
+    if (gp.networkManager != null && gp.networkManager.isConnected()) {
+        gp.networkManager.sendRoomChange(currentRoomId);
+    }
+    
+    // 5. Repaint
+    gp.repaint();
+}
 
     // ═══════════════════════════════════════════════════════════
     // LISTENER MANAGEMENT
