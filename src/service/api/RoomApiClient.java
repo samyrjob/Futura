@@ -292,53 +292,46 @@ public class RoomApiClient {
         }
     }
 
-    private Room parseRoomFromJson(JsonObject obj) {
-        try {
-            String roomId = obj.get("roomId").getAsString();
-            String roomName = obj.get("roomName").getAsString();
-            String ownerUsername = obj.get("ownerUsername").getAsString();
-            
-            Room room = new Room(roomName, ownerUsername);
-            
-            // Use reflection or setter to set roomId (since constructor generates new one)
-            // Or modify Room class to accept roomId in constructor
-            setRoomId(room, roomId);
-            
-            // Set room type
-            if (obj.has("roomType")) {
-                String typeStr = obj.get("roomType").getAsString();
-                room.setRoomType(Room.RoomType.valueOf(typeStr));
-            }
-            
-            // Set description
-            if (obj.has("description") && !obj.get("description").isJsonNull()) {
-                room.setDescription(obj.get("description").getAsString());
-            }
-            
-            // Set player count
-            if (obj.has("currentPlayerCount")) {
-                room.setCurrentPlayerCount(obj.get("currentPlayerCount").getAsInt());
-            }
-            
-            // Set max players
-            if (obj.has("maxPlayers")) {
-                room.setMaxPlayers(obj.get("maxPlayers").getAsInt());
-            }
-            
-            // Set dimensions
-            if (obj.has("width")) {
-                room.setWidth(obj.get("width").getAsInt());
-            }
-            if (obj.has("height")) {
-                room.setHeight(obj.get("height").getAsInt());
-            }
-            
-            return room;
-        } catch (Exception e) {
-            System.err.println("[ROOM API] Failed to parse room JSON: " + e.getMessage());
-            return null;
+private Room parseRoomFromJson(JsonObject obj) {
+    try {
+        String roomId = obj.get("roomId").getAsString();
+        String roomName = obj.get("roomName").getAsString();
+        String ownerUsername = obj.get("ownerUsername").getAsString();
+        
+        // ✅ Use the 3-parameter constructor (roomId, roomName, ownerUsername)
+        Room room = new Room(roomId, roomName, ownerUsername);
+        
+        // Set room type
+        if (obj.has("roomType") && !obj.get("roomType").isJsonNull()) {
+            String typeStr = obj.get("roomType").getAsString();
+            room.setRoomType(Room.RoomType.valueOf(typeStr));
         }
+        
+        // Set description
+        if (obj.has("description") && !obj.get("description").isJsonNull()) {
+            room.setDescription(obj.get("description").getAsString());
+        }
+        
+        // Set player count
+        if (obj.has("currentPlayerCount")) {
+            room.setCurrentPlayerCount(obj.get("currentPlayerCount").getAsInt());
+        }
+        
+        // Set max players
+        if (obj.has("maxPlayers")) {
+            room.setMaxPlayers(obj.get("maxPlayers").getAsInt());
+        }
+        
+        // ✅ REMOVED setWidth/setHeight - they're set via constructor
+        // Width and height default to 9x5 in the Room constructor
+        
+        return room;
+    } catch (Exception e) {
+        System.err.println("[ROOM API] Failed to parse room JSON: " + e.getMessage());
+        e.printStackTrace();
+        return null;
     }
+}
 
     /**
      * Helper to set roomId (Room class generates its own, but we need the server's ID)

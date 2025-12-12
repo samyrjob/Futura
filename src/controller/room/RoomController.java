@@ -335,22 +335,28 @@ public class RoomController {
     // UPDATE GAME STATE FOR ROOM
     // ═══════════════════════════════════════════════════════════
 
-    private void updateGameForRoom() {
-        if (currentRoom == null || gp == null) return;
-        
-        // Update tile map if available
-        if (currentRoom.getTileMap() != null) {
-            // gp.tileM.loadRoomTiles(currentRoom.getTileMap());
-        }
-        
-        // Reset player position
-        if (gp.player != null) {
-            gp.player.worldX = gp.tileSize * 4;
-            gp.player.worldY = gp.tileSize * 2;
-        }
-        
-        System.out.println("[ROOM CTRL] Game updated for room: " + currentRoom.getRoomName());
-    }
+// ═══════════════════════════════════════════════════════════
+// UPDATE GAME STATE FOR ROOM
+// ═══════════════════════════════════════════════════════════
+
+private void updateGameForRoom() {
+    if (currentRoom == null || gp == null) return;
+    
+    // Update tile map if available
+    // TODO: Uncomment when tileManager supports this
+    // if (currentRoom.getTileMap() != null && gp.tileM != null) {
+    //     gp.tileM.loadRoomTiles(currentRoom.getTileMap());
+    // }
+    
+    // Reset player position
+    // TODO: Adjust based on your Player class field names
+    // if (gp.player != null) {
+    //     gp.player.x = 4 * 64;  // Adjust to your tile size and field names
+    //     gp.player.y = 2 * 64;
+    // }
+    
+    System.out.println("[ROOM CTRL] Game updated for room: " + currentRoom.getRoomName());
+}
 
     // ═══════════════════════════════════════════════════════════
     // LISTENER MANAGEMENT
@@ -425,5 +431,25 @@ public class RoomController {
         listeners.clear();
         roomCache.clear();
         System.out.println("[ROOM CTRL] Shutdown complete");
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+// RETURN TO LOBBY
+// ═══════════════════════════════════════════════════════════
+
+    public void returnToLobby() {
+        System.out.println("[ROOM CTRL] Returning to lobby...");
+        
+        // Leave current room
+        leaveCurrentRoom();
+        
+        // Enter lobby
+        String username = apiClient.getCurrentUsername();
+        if (username != null) {
+            enterRoom("lobby", username);
+        } else {
+            System.err.println("[ROOM CTRL] Cannot return to lobby - no username set");
+        }
     }
 }
