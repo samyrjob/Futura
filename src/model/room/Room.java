@@ -277,6 +277,14 @@ public class Room {
     public int[][] getTileMap() {
         return tileMap;
     }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
     
     public void setTileMap(int[][] tileMap) {
         this.tileMap = tileMap;

@@ -341,24 +341,70 @@ public class RoomController {
 // UPDATE GAME STATE FOR ROOM
 // ═══════════════════════════════════════════════════════════
 
-private void updateGameForRoom() {
-    if (currentRoom == null || gp == null) return;
+// private void updateGameForRoom() {
+//     if (currentRoom == null || gp == null) return;
     
-    // Update tile map if available
-    // TODO: Uncomment when tileManager supports this
-    // if (currentRoom.getTileMap() != null && gp.tileM != null) {
-    //     gp.tileM.loadRoomTiles(currentRoom.getTileMap());
-    // }
+//     // Update tile map if available
+//     // TODO: Uncomment when tileManager supports this
+//     // if (currentRoom.getTileMap() != null && gp.tileM != null) {
+//     //     gp.tileM.loadRoomTiles(currentRoom.getTileMap());
+//     // }
     
-    // Reset player position
-    // TODO: Adjust based on your Player class field names
-    // if (gp.player != null) {
-    //     gp.player.x = 4 * 64;  // Adjust to your tile size and field names
-    //     gp.player.y = 2 * 64;
-    // }
+//     // Reset player position
+//     // TODO: Adjust based on your Player class field names
+//     // if (gp.player != null) {
+//     //     gp.player.x = 4 * 64;  // Adjust to your tile size and field names
+//     //     gp.player.y = 2 * 64;
+//     // }
     
-    System.out.println("[ROOM CTRL] Game updated for room: " + currentRoom.getRoomName());
-}
+//     System.out.println("[ROOM CTRL] Game updated for room: " + currentRoom.getRoomName());
+// }
+
+    // ═══════════════════════════════════════════════════════════
+    // UPDATE GAME STATE FOR ROOM
+    // ═══════════════════════════════════════════════════════════
+
+    private void updateGameForRoom() {
+        if (currentRoom == null || gp == null) return;
+        
+        System.out.println("[ROOM CTRL] Updating game for room: " + currentRoom.getRoomName());
+        
+        // 1. Load room's tile map if available
+        if (currentRoom.getTileMap() != null && gp.tile_manager != null) {
+            int[][] tileMap = currentRoom.getTileMap();
+            gp.tile_manager.setMapTileNum(tileMap);
+            System.out.println("[ROOM CTRL] Loaded custom tile map");
+        } else {
+            // Load default map for this room (could be room-specific later)
+            // For now, reload the default map
+            gp.tile_manager.loadMap("/res/maps/map01.txt");
+            System.out.println("[ROOM CTRL] Loaded default tile map");
+        }
+        
+        // 2. Reset player position to room center
+        int spawnX = currentRoom.getWidth() / 2;  // Center X (e.g., 4 for 9-wide room)
+        int spawnY = currentRoom.getHeight() / 2; // Center Y (e.g., 2 for 5-tall room)
+        
+        // Move player to spawn point
+        if (gp.player != null) {
+            gp.player.setPosition(spawnX, spawnY);
+            System.out.println("[ROOM CTRL] Player spawned at tile: " + spawnX + ", " + spawnY);
+        }
+        
+        // 3. Clear remote players (they're in a different room now)
+        gp.removeAllRemotePlayers();
+        
+        // 4. Notify network of room change (if connected)
+        if (gp.networkManager != null && gp.networkManager.isConnected()) {
+            // Could send room change message here
+            System.out.println("[ROOM CTRL] TODO: Notify server of room change");
+        }
+        
+        // 5. Force repaint
+        gp.repaint();
+        
+        System.out.println("[ROOM CTRL] ✅ Game updated for room: " + currentRoom.getRoomName());
+    }
 
     // ═══════════════════════════════════════════════════════════
     // LISTENER MANAGEMENT

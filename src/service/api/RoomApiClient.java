@@ -322,8 +322,13 @@ private Room parseRoomFromJson(JsonObject obj) {
             room.setMaxPlayers(obj.get("maxPlayers").getAsInt());
         }
         
-        // ✅ REMOVED setWidth/setHeight - they're set via constructor
-        // Width and height default to 9x5 in the Room constructor
+            // ✅ NEW - Set width and height
+        if (obj.has("width")) {
+            room.setWidth(obj.get("width").getAsInt());
+        }
+        if (obj.has("height")) {
+            room.setHeight(obj.get("height").getAsInt());
+        }
         
         return room;
     } catch (Exception e) {
