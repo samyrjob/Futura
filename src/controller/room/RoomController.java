@@ -1,35 +1,41 @@
 package controller.room;
 
-import model.room.Room;
-import main.GameConstants;
 import main.GamePanel;
+import model.room.Room;
+import service.api.RoomApiClient;
+import service.websocket.RoomWebSocketClient;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
- * RoomController - Business logic for room management
+ * Room Controller - Manages rooms via REST API
  * 
- * Part of MVC Architecture:
- * - Handles all room operations (create, enter, leave, delete)
- * - Coordinates with Repository for persistence
- * - Notifies listeners of room changes
- * - Does NOT handle UI rendering
- * 
- * Observer Pattern:
- * - Views subscribe to room change events
- * - Controller notifies when room state changes
+ * Features:
+ * - Fetches rooms from Spring Boot server
+ * - Caches rooms locally for fast access
+ * - Notifies listeners of changes
+ * - Handles enter/leave/create operations
  */
 public class RoomController {
-    
+
     private GamePanel gp;
-    private RoomRepository repository;
+    private RoomApiClient apiClient;
+    
+    // Local cache
+    private Map<String, Room> roomCache;
     
     // Current room state
     private Room currentRoom;
     private String currentRoomId;
     
-    // Event listeners
+    // Favorites (stored locally for now)
+    private Set<String> favoriteRoomIds;
+    
+    // Listeners
     private List<RoomChangeListener> listeners;
+    private RoomWebSocketClient webSocketClient;
     
     // ═══════════════════════════════════════════════════════════
     // LISTENER INTERFACE
@@ -42,408 +48,459 @@ public class RoomController {
         void onRoomDeleted(Room room);
         void onRoomListChanged();
     }
-    
+
     // ═══════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════
-    
+
     public RoomController(GamePanel gp) {
         this.gp = gp;
-        this.repository = new RoomRepository();
+        this.apiClient = new RoomApiClient();
+        this.roomCache = new ConcurrentHashMap<>();
+        this.favoriteRoomIds = new HashSet<>();
         this.listeners = new ArrayList<>();
         
-        // Load rooms from storage
-        repository.loadAllRooms();
+        System.out.println("[ROOM CTRL] Controller created");
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // INITIALIZATION (called after SSO validation)
+    // ═══════════════════════════════════════════════════════════
+
+    public void initialize(String username) {
+        System.out.println("[ROOM CTRL] Initializing for user: " + username);
         
-        // Start in lobby
-        currentRoom = repository.findById(GameConstants.LOBBY_ROOM_ID);
-        currentRoomId = GameConstants.LOBBY_ROOM_ID;
+        // Set username for API calls
+        apiClient.setCurrentUsername(username);
         
-        if (currentRoom == null) {
-            System.err.println("[ROOM CTRL] WARNING: Lobby room not found!");
+        // Load rooms from server
+        refreshRoomCache();
+        
+        // Enter lobby by default
+        Room lobby = roomCache.get("lobby");
+        if (lobby != null) {
+            System.out.println("[ROOM CTRL] Entering lobby...");
+            enterRoom("lobby", username);
         } else {
-            System.out.println("[ROOM CTRL] Starting in lobby: " + currentRoom.getRoomName());
-        }
-    }
-    
-    // ═══════════════════════════════════════════════════════════
-    // LISTENER MANAGEMENT
-    // ═══════════════════════════════════════════════════════════
-    
-    public void addListener(RoomChangeListener listener) {
-        listeners.add(listener);
-    }
-    
-    public void removeListener(RoomChangeListener listener) {
-        listeners.remove(listener);
-    }
-    
-    private void notifyRoomEntered(Room room) {
-        for (RoomChangeListener listener : listeners) {
-            listener.onRoomEntered(room);
-        }
-    }
-    
-    private void notifyRoomLeft(Room room) {
-        for (RoomChangeListener listener : listeners) {
-            listener.onRoomLeft(room);
-        }
-    }
-    
-    private void notifyRoomCreated(Room room) {
-        for (RoomChangeListener listener : listeners) {
-            listener.onRoomCreated(room);
-        }
-    }
-    
-    private void notifyRoomDeleted(Room room) {
-        for (RoomChangeListener listener : listeners) {
-            listener.onRoomDeleted(room);
-        }
-    }
-    
-    private void notifyRoomListChanged() {
-        for (RoomChangeListener listener : listeners) {
-            listener.onRoomListChanged();
-        }
-    }
-    
-    // ═══════════════════════════════════════════════════════════
-    // ROOM CREATION
-    // ═══════════════════════════════════════════════════════════
-    
-    /**
-     * Create a new room
-     */
-    public Room createRoom(String roomName, String ownerUsername) {
-        // Validate
-        if (roomName == null || roomName.trim().isEmpty()) {
-            System.err.println("[ROOM CTRL] Cannot create room: name is empty");
-            return null;
+            System.out.println("[ROOM CTRL] Warning: Lobby room not found!");
         }
         
-        // Create room
-        Room room = new Room(roomName.trim(), ownerUsername, gp.maxWorldCol, gp.maxWorldRow);
-        
-        // Save to repository
-        repository.save(room);
-        
-        System.out.println("[ROOM CTRL] Created room: " + room.getRoomName() + " [" + room.getRoomId() + "]");
-        
-        // Notify listeners
-        notifyRoomCreated(room);
-        notifyRoomListChanged();
-        
-        return room;
+        System.out.println("[ROOM CTRL] Initialization complete");
     }
-    
-    /**
-     * Create room with custom tile layout
-     */
-    public Room createRoom(String roomName, String ownerUsername, int[][] tileLayout) {
-        Room room = createRoom(roomName, ownerUsername);
-        if (room != null && tileLayout != null) {
-            room.setTileMap(tileLayout);
-            repository.save(room);
+
+    // ═══════════════════════════════════════════════════════════
+    // REFRESH ROOMS FROM SERVER
+    // ═══════════════════════════════════════════════════════════
+
+    public void refreshRoomCache() {
+        System.out.println("[ROOM CTRL] Refreshing room cache from server...");
+        
+        try {
+            List<Room> publicRooms = apiClient.getPublicRooms();
+            
+            // Clear and repopulate cache
+            roomCache.clear();
+            for (Room room : publicRooms) {
+                roomCache.put(room.getRoomId(), room);
+            }
+            
+            System.out.println("[ROOM CTRL] Loaded " + roomCache.size() + " rooms from server");
+            
+            // Notify listeners
+            notifyRoomListChanged();
+            
+        } catch (Exception e) {
+            System.err.println("[ROOM CTRL] Failed to refresh rooms: " + e.getMessage());
         }
-        return room;
     }
-    
+
     // ═══════════════════════════════════════════════════════════
-    // ROOM DELETION
+    // GET ROOMS
     // ═══════════════════════════════════════════════════════════
-    
-    /**
-     * Delete a room (only owner can delete)
-     */
-    public boolean deleteRoom(String roomId, String username) {
-        Room room = repository.findById(roomId);
+
+    public List<Room> getPublicRooms() {
+        return roomCache.values().stream()
+            .filter(r -> r.getRoomType() == Room.RoomType.PUBLIC)
+            .sorted(Comparator.comparing(Room::getRoomName))
+            .collect(Collectors.toList());
+    }
+
+    public List<Room> getMyRooms(String username) {
+        return roomCache.values().stream()
+            .filter(r -> r.getOwnerUsername().equalsIgnoreCase(username))
+            .sorted(Comparator.comparing(Room::getRoomName))
+            .collect(Collectors.toList());
+    }
+
+    public List<Room> getFavoriteRooms() {
+        return roomCache.values().stream()
+            .filter(r -> favoriteRoomIds.contains(r.getRoomId()))
+            .sorted(Comparator.comparing(Room::getRoomName))
+            .collect(Collectors.toList());
+    }
+
+    public List<Room> getAllRooms() {
+        return new ArrayList<>(roomCache.values());
+    }
+
+    public Room getRoom(String roomId) {
+        return roomCache.get(roomId);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // CURRENT ROOM
+    // ═══════════════════════════════════════════════════════════
+
+    public Room getCurrentRoom() {
+        return currentRoom;
+    }
+
+    public String getCurrentRoomId() {
+        return currentRoomId;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ENTER ROOM
+    // ═══════════════════════════════════════════════════════════
+
+    public boolean enterRoom(String roomId, String username) {
+        Room room = roomCache.get(roomId);
         
-        // Validations
         if (room == null) {
-            System.err.println("[ROOM CTRL] Cannot delete: room not found");
+            // Try to fetch from server
+            room = apiClient.getRoom(roomId);
+            if (room != null) {
+                roomCache.put(roomId, room);
+            }
+        }
+        
+        if (room == null) {
+            System.err.println("[ROOM CTRL] Room not found: " + roomId);
+            return false;
+        }
+        
+        // Check if can enter
+        if (!room.canEnter(username)) {
+            System.err.println("[ROOM CTRL] Cannot enter room: " + roomId);
+            return false;
+        }
+        
+        // Leave current room first
+        if (currentRoomId != null && !currentRoomId.equals(roomId)) {
+            leaveCurrentRoom();
+        }
+        
+        // Enter via API
+        boolean success = apiClient.enterRoom(roomId);
+        
+        if (success) {
+            currentRoom = room;
+            currentRoomId = roomId;
+            
+            // Update game state for the new room
+            updateGameForRoom();
+            
+            // Notify listeners
+            notifyRoomEntered(room);
+            
+            System.out.println("[ROOM CTRL] Entered room: " + room.getRoomName());
+        }
+        
+        return success;
+    }
+
+    public boolean enterRoomWithPassword(String roomId, String username, String password) {
+        Room room = roomCache.get(roomId);
+        
+        if (room == null) {
+            System.err.println("[ROOM CTRL] Room not found: " + roomId);
+            return false;
+        }
+        
+        // Leave current room first
+        if (currentRoomId != null && !currentRoomId.equals(roomId)) {
+            leaveCurrentRoom();
+        }
+        
+        // Enter via API with password
+        boolean success = apiClient.enterRoomWithPassword(roomId, password);
+        
+        if (success) {
+            currentRoom = room;
+            currentRoomId = roomId;
+            
+            updateGameForRoom();
+            notifyRoomEntered(room);
+            
+            System.out.println("[ROOM CTRL] Entered locked room: " + room.getRoomName());
+        }
+        
+        return success;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // LEAVE ROOM
+    // ═══════════════════════════════════════════════════════════
+
+    public void leaveCurrentRoom() {
+        if (currentRoomId != null) {
+            apiClient.leaveRoom(currentRoomId);
+            
+            Room leftRoom = currentRoom;
+            currentRoom = null;
+            currentRoomId = null;
+            
+            if (leftRoom != null) {
+                notifyRoomLeft(leftRoom);
+            }
+            
+            System.out.println("[ROOM CTRL] Left room");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // CREATE ROOM
+    // ═══════════════════════════════════════════════════════════
+
+    public Room createRoom(String roomName, String ownerUsername) {
+        Room newRoom = apiClient.createRoom(roomName.trim());
+        
+        if (newRoom != null) {
+            roomCache.put(newRoom.getRoomId(), newRoom);
+            notifyRoomCreated(newRoom);
+            System.out.println("[ROOM CTRL] Created room: " + newRoom.getRoomName());
+        }
+        
+        return newRoom;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // DELETE ROOM
+    // ═══════════════════════════════════════════════════════════
+
+    public boolean deleteRoom(String roomId, String username) {
+        Room room = roomCache.get(roomId);
+        
+        if (room == null) {
             return false;
         }
         
         if (!room.isOwner(username)) {
-            System.err.println("[ROOM CTRL] Cannot delete: not the owner");
+            System.err.println("[ROOM CTRL] Not owner, cannot delete");
             return false;
         }
         
-        if (roomId.equals(GameConstants.LOBBY_ROOM_ID)) {
-            System.err.println("[ROOM CTRL] Cannot delete: lobby is protected");
-            return false;
+        boolean success = apiClient.deleteRoom(roomId);
+        
+        if (success) {
+            roomCache.remove(roomId);
+            favoriteRoomIds.remove(roomId);
+            notifyRoomDeleted(room);
+            System.out.println("[ROOM CTRL] Deleted room: " + room.getRoomName());
         }
         
-        // If currently in this room, return to lobby first
-        if (roomId.equals(currentRoomId)) {
-            returnToLobby();
-        }
-        
-        // Delete from repository
-        repository.delete(roomId);
-        
-        System.out.println("[ROOM CTRL] Deleted room: " + room.getRoomName());
-        
-        // Notify listeners
-        notifyRoomDeleted(room);
+        return success;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // FAVORITES
+    // ═══════════════════════════════════════════════════════════
+
+    public void addFavorite(String roomId) {
+        favoriteRoomIds.add(roomId);
         notifyRoomListChanged();
-        
-        return true;
+    }
+
+    public void removeFavorite(String roomId) {
+        favoriteRoomIds.remove(roomId);
+        notifyRoomListChanged();
+    }
+
+    public boolean isFavorite(String roomId) {
+        return favoriteRoomIds.contains(roomId);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // UPDATE PLAYER COUNT (called from WebSocket)
+    // ═══════════════════════════════════════════════════════════
+
+    public void updatePlayerCount(String roomId, int count) {
+        Room room = roomCache.get(roomId);
+        if (room != null) {
+            room.setCurrentPlayerCount(count);
+            notifyRoomListChanged();
+            System.out.println("[ROOM CTRL] Updated player count: " + roomId + " = " + count);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // UPDATE GAME STATE FOR ROOM
+    // ═══════════════════════════════════════════════════════════
+
+
+
+    // ═══════════════════════════════════════════════════════════
+    // UPDATE GAME STATE FOR ROOM
+    // ═══════════════════════════════════════════════════════════
+
+private void updateGameForRoom() {
+    if (currentRoom == null || gp == null) return;
+    
+    System.out.println("[ROOM CTRL] Updating game for room: " + currentRoom.getRoomName());
+    
+    // 1. Load room's tile map
+    if (currentRoom.getTileMap() != null && gp.tile_manager != null) {
+        int[][] tileMap = currentRoom.getTileMap();
+        gp.tile_manager.setMapTileNum(tileMap);
+    } else {
+        gp.tile_manager.loadMap("/res/maps/map01.txt");
     }
     
     // ═══════════════════════════════════════════════════════════
-    // ROOM NAVIGATION
+    // 2. ✅ FIXED - Spawn at CORNER (0,0) like Habbo Hotel!
     // ═══════════════════════════════════════════════════════════
+    if (gp.player != null) {
+        gp.player.setPosition(0, 0);  // ✅ CORNER, not center!
+        System.out.println("[ROOM CTRL] Player spawned at corner (0,0)");
+    }
     
-    /**
-     * Enter a room
-     */
-    public boolean enterRoom(String roomId, String username) {
-        Room room = repository.findById(roomId);
-        
-        // Validations
-        if (room == null) {
-            System.err.println("[ROOM CTRL] Cannot enter: room not found - " + roomId);
-            return false;
+    // 3. Clear remote players
+    gp.removeAllRemotePlayers();
+    
+    // 4. Notify server of room change
+    if (gp.networkManager != null && gp.networkManager.isConnected()) {
+        gp.networkManager.sendRoomChange(currentRoomId);
+    }
+    
+    // 5. Repaint
+    gp.repaint();
+}
+
+    // ═══════════════════════════════════════════════════════════
+    // LISTENER MANAGEMENT
+    // ═══════════════════════════════════════════════════════════
+
+    public void addListener(RoomChangeListener listener) {
+        if (!listeners.contains(listener)) {
+            listeners.add(listener);
         }
-        
-        if (!room.canEnter(username)) {
-            System.err.println("[ROOM CTRL] Cannot enter: access denied to " + room.getRoomName());
-            return false;
+    }
+
+    public void removeListener(RoomChangeListener listener) {
+        listeners.remove(listener);
+    }
+
+    private void notifyRoomEntered(Room room) {
+        for (RoomChangeListener listener : listeners) {
+            try {
+                listener.onRoomEntered(room);
+            } catch (Exception e) {
+                System.err.println("[ROOM CTRL] Listener error: " + e.getMessage());
+            }
         }
+    }
+
+    private void notifyRoomLeft(Room room) {
+        for (RoomChangeListener listener : listeners) {
+            try {
+                listener.onRoomLeft(room);
+            } catch (Exception e) {
+                System.err.println("[ROOM CTRL] Listener error: " + e.getMessage());
+            }
+        }
+    }
+
+    private void notifyRoomCreated(Room room) {
+        for (RoomChangeListener listener : listeners) {
+            try {
+                listener.onRoomCreated(room);
+            } catch (Exception e) {
+                System.err.println("[ROOM CTRL] Listener error: " + e.getMessage());
+            }
+        }
+    }
+
+    private void notifyRoomDeleted(Room room) {
+        for (RoomChangeListener listener : listeners) {
+            try {
+                listener.onRoomDeleted(room);
+            } catch (Exception e) {
+                System.err.println("[ROOM CTRL] Listener error: " + e.getMessage());
+            }
+        }
+    }
+
+    public void notifyRoomListChanged() {
+        for (RoomChangeListener listener : listeners) {
+            try {
+                listener.onRoomListChanged();
+            } catch (Exception e) {
+                System.err.println("[ROOM CTRL] Listener error: " + e.getMessage());
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // SHUTDOWN
+    // ═══════════════════════════════════════════════════════════
+
+    public void shutdown() {
+        stopLiveUpdates();  // ✅ ADD THIS LINE
+        leaveCurrentRoom();
+        listeners.clear();
+        roomCache.clear();
+        System.out.println("[ROOM CTRL] Shutdown complete");
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+// RETURN TO LOBBY
+// ═══════════════════════════════════════════════════════════
+
+    public void returnToLobby() {
+        System.out.println("[ROOM CTRL] Returning to lobby...");
         
         // Leave current room
         leaveCurrentRoom();
         
-        // Enter new room
-        Room oldRoom = currentRoom;
-        currentRoom = room;
-        currentRoomId = roomId;
-        room.updateLastVisited();
-        
-        // Update game state
-        updateGameForRoom();
-        
-        // Notify network
-        if (gp.networkManager != null && gp.networkManager.isConnected()) {
-            gp.networkManager.sendRoomChange(roomId);
+        // Enter lobby
+        String username = apiClient.getCurrentUsername();
+        if (username != null) {
+            enterRoom("lobby", username);
+        } else {
+            System.err.println("[ROOM CTRL] Cannot return to lobby - no username set");
         }
-        
-        System.out.println("[ROOM CTRL] Entered room: " + room.getRoomName());
-        
-        // Notify listeners
-        if (oldRoom != null) {
-            notifyRoomLeft(oldRoom);
-        }
-        notifyRoomEntered(room);
-        
-        return true;
     }
-    
+
+    // ═══════════════════════════════════════════════════════════
+    // WEBSOCKET - Add these methods
+    // ═══════════════════════════════════════════════════════════
+
     /**
-     * Enter a locked room with password
+     * Start WebSocket connection for live updates
      */
-    public boolean enterRoomWithPassword(String roomId, String username, String password) {
-        Room room = repository.findById(roomId);
-        
-        if (room == null) {
-            return false;
+    public void startLiveUpdates() {
+        if (webSocketClient == null) {
+            webSocketClient = new RoomWebSocketClient(this);
         }
-        
-        if (!room.checkPassword(password)) {
-            System.err.println("[ROOM CTRL] Wrong password for room: " + room.getRoomName());
-            return false;
-        }
-        
-        return enterRoom(roomId, username);
+        webSocketClient.connect();
+        System.out.println("[ROOM CTRL] Live updates started");
     }
-    
+
     /**
-     * Return to lobby
+     * Stop WebSocket connection
      */
-    public void returnToLobby() {
-        enterRoom(GameConstants.LOBBY_ROOM_ID, gp.player.name);
+    public void stopLiveUpdates() {
+        if (webSocketClient != null) {
+            webSocketClient.disconnect();
+            webSocketClient = null;
+        }
     }
-    
+
     /**
-     * Leave current room (internal)
+     * Check if WebSocket is connected
      */
-    private void leaveCurrentRoom() {
-        if (currentRoom == null) return;
-        
-        // Clear furniture
-        gp.furnitureManager.clearFurniture();
-        
-        // Notify network
-        if (gp.networkManager != null && gp.networkManager.isConnected()) {
-            gp.networkManager.sendLeaveRoom(currentRoomId);
-        }
-    }
-    
-    /**
-     * Update game state for new room
-     */
-    private void updateGameForRoom() {
-        if (currentRoom == null) return;
-        
-        // Update tile manager
-        gp.tile_manager.setMapTileNum(currentRoom.getTileMap());
-        
-        // Load furniture
-        gp.furnitureManager.clearFurniture();
-        for (object.Furniture furniture : currentRoom.getFurniture()) {
-            gp.furnitureManager.addFurniture(furniture);
-        }
-        
-        // Reset player position
-        gp.player.movement.xCurrent = 4;  // Center
-        gp.player.movement.yCurrent = 2;
-        gp.player.updateSpritePosition();
-        
-        // Clear remote players
-        gp.removeAllRemotePlayers();
-    }
-    
-    // ═══════════════════════════════════════════════════════════
-    // ROOM QUERIES
-    // ═══════════════════════════════════════════════════════════
-    
-    public Room getCurrentRoom() {
-        return currentRoom;
-    }
-    
-    public String getCurrentRoomId() {
-        return currentRoomId;
-    }
-    
-    public Room getRoom(String roomId) {
-        return repository.findById(roomId);
-    }
-    
-    public List<Room> getAllRooms() {
-        return repository.findAll();
-    }
-    
-    public List<Room> getPublicRooms() {
-        return repository.findPublicRooms();
-    }
-    
-    public List<Room> getMyRooms(String username) {
-        return repository.findByOwner(username);
-    }
-    
-    public List<Room> searchRooms(String query) {
-        return repository.searchByName(query);
-    }
-    
-    public int getRoomCount() {
-        return repository.count();
-    }
-    
-    // ═══════════════════════════════════════════════════════════
-    // FAVORITES
-    // ═══════════════════════════════════════════════════════════
-    
-    private List<String> favoriteRoomIds = new ArrayList<>();
-    
-    public void addToFavorites(String roomId) {
-        if (!favoriteRoomIds.contains(roomId)) {
-            favoriteRoomIds.add(roomId);
-            repository.saveFavorites(gp.player.name, favoriteRoomIds);
-            System.out.println("[ROOM CTRL] Added to favorites: " + roomId);
-        }
-    }
-    
-    public void removeFromFavorites(String roomId) {
-        favoriteRoomIds.remove(roomId);
-        repository.saveFavorites(gp.player.name, favoriteRoomIds);
-        System.out.println("[ROOM CTRL] Removed from favorites: " + roomId);
-    }
-    
-    public boolean isFavorite(String roomId) {
-        return favoriteRoomIds.contains(roomId);
-    }
-    
-    public List<Room> getFavoriteRooms() {
-        return repository.getFavoriteRooms(gp.player.name);
-    }
-    
-    public void loadFavorites() {
-        favoriteRoomIds = repository.loadFavorites(gp.player.name);
-    }
-    
-    // ═══════════════════════════════════════════════════════════
-    // ROOM SETTINGS (Owner only)
-    // ═══════════════════════════════════════════════════════════
-    
-    public boolean updateRoomName(String roomId, String username, String newName) {
-        Room room = repository.findById(roomId);
-        
-        if (room == null || !room.isOwner(username)) {
-            return false;
-        }
-        
-        room.setRoomName(newName.trim());
-        repository.save(room);
-        notifyRoomListChanged();
-        
-        return true;
-    }
-    
-    public boolean updateRoomType(String roomId, String username, Room.RoomType newType) {
-        Room room = repository.findById(roomId);
-        
-        if (room == null || !room.isOwner(username)) {
-            return false;
-        }
-        
-        room.setRoomType(newType);
-        repository.save(room);
-        notifyRoomListChanged();
-        
-        return true;
-    }
-    
-    public boolean setRoomPassword(String roomId, String username, String password) {
-        Room room = repository.findById(roomId);
-        
-        if (room == null || !room.isOwner(username)) {
-            return false;
-        }
-        
-        room.setPassword(password);
-        repository.save(room);
-        
-        return true;
-    }
-    
-    // ═══════════════════════════════════════════════════════════
-    // PERSISTENCE
-    // ═══════════════════════════════════════════════════════════
-    
-    /**
-     * Save all rooms (call on game exit)
-     */
-    public void saveRooms() {
-        repository.saveAllRooms();
-    }
-    
-    /**
-     * Reload rooms from file
-     */
-    public void reloadRooms() {
-        repository.reload();
-        notifyRoomListChanged();
-    }
-    
-    // ═══════════════════════════════════════════════════════════
-    // CLEANUP
-    // ═══════════════════════════════════════════════════════════
-    
-    public void shutdown() {
-        System.out.println("[ROOM CTRL] Shutting down...");
-        saveRooms();
-        listeners.clear();
+    public boolean isLiveUpdatesConnected() {
+        return webSocketClient != null && webSocketClient.isConnected();
     }
 }

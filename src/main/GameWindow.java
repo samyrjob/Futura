@@ -34,7 +34,7 @@ public class GameWindow {
     
     // Components
     private final JFrame window;
-    private final GamePanel gamePanel;
+    public final GamePanel gamePanel;
     private JTextField messageField;
     private JButton sendButton;
     private JButton inventoryButton;
@@ -386,4 +386,10 @@ public class GameWindow {
         messageField.setText("");
         gamePanel.repaint();
     }
+
+    public GamePanel getGamePanel() {
+    return this.gamePanel;  // or whatever your field is named
+}
+
+
 }

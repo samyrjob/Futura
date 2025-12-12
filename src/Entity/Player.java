@@ -227,4 +227,18 @@ public class Player extends Entity {
             this.y = y;
         }
     }
+
+
+        /**
+     * Set player position directly (for room transitions)
+     */
+    public void setPosition(int tileX, int tileY) {
+        // Delegate to movement component
+        movement.setPosition(tileX, tileY);
+        
+        // Update sprite screen position
+        updateSpritePosition();
+        
+        System.out.println("[PLAYER] Position set to tile: " + tileX + ", " + tileY);
+    }
 }
