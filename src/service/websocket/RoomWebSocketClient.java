@@ -4,8 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import controller.room.RoomController;
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.ClientEndpoint;
 
-import javax.websocket.*;
+import jakarta.websocket.*;
 import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

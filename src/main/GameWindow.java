@@ -386,4 +386,10 @@ public class GameWindow {
         messageField.setText("");
         gamePanel.repaint();
     }
+
+    public GamePanel getGamePanel() {
+    return this.gamePanel;  // or whatever your field is named
+}
+
+
 }

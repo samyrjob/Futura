@@ -1,7 +1,10 @@
 package service.api;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import model.room.Room;
 
 import java.io.*;
@@ -10,18 +13,15 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
- * RoomApiClient - HTTP client for Room API
- * 
- * Connects Java Swing client to Spring Boot backend
- * Replaces local file storage with centralized server
+ * HTTP Client for Room API
+ * Communicates with Spring Boot backend
  */
 public class RoomApiClient {
 
     private static final String BASE_URL = "http://localhost:9090/api/rooms";
-    private static final int TIMEOUT = 10000; // 10 seconds
+    private static final int TIMEOUT = 10000;
     
     private final Gson gson;
     private String currentUsername;
@@ -31,22 +31,29 @@ public class RoomApiClient {
     // ═══════════════════════════════════════════════════════════
 
     public RoomApiClient() {
-        this.gson = new Gson();
+        this.gson = new GsonBuilder()
+            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+            .create();
         System.out.println("[ROOM API] Client initialized");
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // USERNAME
+    // ═══════════════════════════════════════════════════════════
 
     public void setCurrentUsername(String username) {
         this.currentUsername = username;
         System.out.println("[ROOM API] Username set to: " + username);
     }
 
+    public String getCurrentUsername() {
+        return currentUsername;
+    }
+
     // ═══════════════════════════════════════════════════════════
     // GET ROOMS
     // ═══════════════════════════════════════════════════════════
 
-    /**
-     * Get all public rooms
-     */
     public List<Room> getPublicRooms() {
         try {
             String response = sendGet(BASE_URL + "/public");
@@ -57,85 +64,43 @@ public class RoomApiClient {
         }
     }
 
-    /**
-     * Get rooms owned by current user
-     */
     public List<Room> getMyRooms() {
         if (currentUsername == null) {
-            System.err.println("[ROOM API] Cannot get my rooms: username not set");
+            System.err.println("[ROOM API] No username set for getMyRooms");
             return new ArrayList<>();
         }
-
+        
         try {
-            // Use search by owner endpoint or filter locally
-            String response = sendGet(BASE_URL + "/public");
-            List<Room> allRooms = parseRoomList(response);
-            
-            // Filter by owner
-            List<Room> myRooms = new ArrayList<>();
-            for (Room room : allRooms) {
-                if (room.getOwnerUsername().equalsIgnoreCase(currentUsername)) {
-                    myRooms.add(room);
-                }
-            }
-            return myRooms;
+            String response = sendGet(BASE_URL + "/my?username=" + currentUsername);
+            return parseRoomList(response);
         } catch (Exception e) {
             System.err.println("[ROOM API] Failed to get my rooms: " + e.getMessage());
             return new ArrayList<>();
         }
     }
 
-    /**
-     * Get room by ID
-     */
     public Room getRoom(String roomId) {
         try {
             String response = sendGet(BASE_URL + "/" + roomId);
             return parseRoom(response);
         } catch (Exception e) {
-            System.err.println("[ROOM API] Failed to get room: " + e.getMessage());
+            System.err.println("[ROOM API] Failed to get room " + roomId + ": " + e.getMessage());
             return null;
         }
     }
 
-    /**
-     * Search rooms by name
-     */
-    public List<Room> searchRooms(String query) {
-        try {
-            String response = sendGet(BASE_URL + "/search?query=" + encodeUrl(query));
-            return parseRoomList(response);
-        } catch (Exception e) {
-            System.err.println("[ROOM API] Failed to search rooms: " + e.getMessage());
-            return new ArrayList<>();
-        }
-    }
-
     // ═══════════════════════════════════════════════════════════
-    // CREATE / DELETE ROOMS
+    // CREATE ROOM
     // ═══════════════════════════════════════════════════════════
 
-    /**
-     * Create a new room
-     */
     public Room createRoom(String roomName) {
-        if (currentUsername == null) {
-            System.err.println("[ROOM API] Cannot create room: username not set");
-            return null;
-        }
-
         try {
-            String json = gson.toJson(Map.of(
-                "roomName", roomName,
-                "ownerUsername", currentUsername
-            ));
+            JsonObject body = new JsonObject();
+            body.addProperty("roomName", roomName);
             
-            String response = sendPost(BASE_URL + "/create", json);
+            String response = sendPost(BASE_URL + "/create", body.toString());
             Room room = parseRoom(response);
-            
-            if (room != null) {
-                System.out.println("[ROOM API] ✅ Created room: " + room.getRoomName());
-            }
+            System.out.println("[ROOM API] Created room: " + room.getRoomName());
             return room;
         } catch (Exception e) {
             System.err.println("[ROOM API] Failed to create room: " + e.getMessage());
@@ -143,13 +108,72 @@ public class RoomApiClient {
         }
     }
 
-    /**
-     * Delete a room
-     */
+    // ═══════════════════════════════════════════════════════════
+    // ENTER / LEAVE ROOM
+    // ═══════════════════════════════════════════════════════════
+
+    public boolean enterRoom(String roomId) {
+        try {
+            JsonObject body = new JsonObject();
+            body.addProperty("username", currentUsername);
+            
+            String response = sendPost(BASE_URL + "/" + roomId + "/enter", body.toString());
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+            
+            boolean success = json.has("success") && json.get("success").getAsBoolean();
+            if (success) {
+                System.out.println("[ROOM API] Entered room: " + roomId);
+            } else {
+                String message = json.has("message") ? json.get("message").getAsString() : "Unknown error";
+                System.err.println("[ROOM API] Failed to enter room: " + message);
+            }
+            return success;
+        } catch (Exception e) {
+            System.err.println("[ROOM API] Failed to enter room " + roomId + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean enterRoomWithPassword(String roomId, String password) {
+        try {
+            JsonObject body = new JsonObject();
+            body.addProperty("username", currentUsername);
+            body.addProperty("password", password);
+            
+            String response = sendPost(BASE_URL + "/" + roomId + "/enter-password", body.toString());
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+            
+            boolean success = json.has("success") && json.get("success").getAsBoolean();
+            if (success) {
+                System.out.println("[ROOM API] Entered locked room: " + roomId);
+            }
+            return success;
+        } catch (Exception e) {
+            System.err.println("[ROOM API] Failed to enter locked room: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public void leaveRoom(String roomId) {
+        try {
+            JsonObject body = new JsonObject();
+            body.addProperty("username", currentUsername);
+            
+            sendPost(BASE_URL + "/" + roomId + "/leave", body.toString());
+            System.out.println("[ROOM API] Left room: " + roomId);
+        } catch (Exception e) {
+            System.err.println("[ROOM API] Failed to leave room: " + e.getMessage());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // DELETE ROOM
+    // ═══════════════════════════════════════════════════════════
+
     public boolean deleteRoom(String roomId) {
         try {
-            sendDelete(BASE_URL + "/" + roomId + "?username=" + encodeUrl(currentUsername));
-            System.out.println("[ROOM API] ✅ Deleted room: " + roomId);
+            sendDelete(BASE_URL + "/" + roomId);
+            System.out.println("[ROOM API] Deleted room: " + roomId);
             return true;
         } catch (Exception e) {
             System.err.println("[ROOM API] Failed to delete room: " + e.getMessage());
@@ -158,93 +182,16 @@ public class RoomApiClient {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ENTER / LEAVE ROOMS
-    // ═══════════════════════════════════════════════════════════
-
-    /**
-     * Enter a room
-     */
-    public boolean enterRoom(String roomId) {
-        if (currentUsername == null) {
-            System.err.println("[ROOM API] Cannot enter room: username not set");
-            return false;
-        }
-
-        try {
-            String json = gson.toJson(Map.of("username", currentUsername));
-            sendPost(BASE_URL + "/" + roomId + "/enter", json);
-            System.out.println("[ROOM API] ✅ Entered room: " + roomId);
-            return true;
-        } catch (Exception e) {
-            System.err.println("[ROOM API] Failed to enter room: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Enter a locked room with password
-     */
-    public boolean enterRoomWithPassword(String roomId, String password) {
-        if (currentUsername == null) {
-            return false;
-        }
-
-        try {
-            String json = gson.toJson(Map.of(
-                "username", currentUsername,
-                "password", password
-            ));
-            sendPost(BASE_URL + "/" + roomId + "/enter-password", json);
-            System.out.println("[ROOM API] ✅ Entered locked room: " + roomId);
-            return true;
-        } catch (Exception e) {
-            System.err.println("[ROOM API] Failed to enter locked room: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Leave a room
-     */
-    public void leaveRoom(String roomId) {
-        if (currentUsername == null) return;
-
-        try {
-            String json = gson.toJson(Map.of("username", currentUsername));
-            sendPost(BASE_URL + "/" + roomId + "/leave", json);
-            System.out.println("[ROOM API] Left room: " + roomId);
-        } catch (Exception e) {
-            System.err.println("[ROOM API] Failed to leave room: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Get users in a room
-     */
-    public List<String> getUsersInRoom(String roomId) {
-        try {
-            String response = sendGet(BASE_URL + "/" + roomId + "/users");
-            Map<String, Object> result = gson.fromJson(response, 
-                new TypeToken<Map<String, Object>>(){}.getType());
-            
-            @SuppressWarnings("unchecked")
-            List<String> users = (List<String>) result.get("users");
-            return users != null ? users : new ArrayList<>();
-        } catch (Exception e) {
-            System.err.println("[ROOM API] Failed to get users: " + e.getMessage());
-            return new ArrayList<>();
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════
     // HTTP METHODS
     // ═══════════════════════════════════════════════════════════
 
     private String sendGet(String urlString) throws IOException {
-        URL url = new URL(urlString);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        System.out.println("[ROOM API] GET " + urlString);
+        
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
         conn.setRequestMethod("GET");
-        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestProperty("X-Username", currentUsername != null ? currentUsername : "");
         conn.setConnectTimeout(TIMEOUT);
         conn.setReadTimeout(TIMEOUT);
 
@@ -252,19 +199,22 @@ public class RoomApiClient {
         if (responseCode == HttpURLConnection.HTTP_OK) {
             return readResponse(conn.getInputStream());
         } else {
-            throw new IOException("HTTP " + responseCode + ": " + readResponse(conn.getErrorStream()));
+            String error = readResponse(conn.getErrorStream());
+            throw new IOException("HTTP " + responseCode + ": " + error);
         }
     }
 
     private String sendPost(String urlString, String jsonBody) throws IOException {
-        URL url = new URL(urlString);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        System.out.println("[ROOM API] POST " + urlString);
+        
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestProperty("X-Username", currentUsername); // Custom header for auth
+        conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestProperty("X-Username", currentUsername != null ? currentUsername : "");
+        conn.setDoOutput(true);
         conn.setConnectTimeout(TIMEOUT);
         conn.setReadTimeout(TIMEOUT);
-        conn.setDoOutput(true);
 
         try (OutputStream os = conn.getOutputStream()) {
             os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
@@ -280,107 +230,126 @@ public class RoomApiClient {
     }
 
     private void sendDelete(String urlString) throws IOException {
-        URL url = new URL(urlString);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        System.out.println("[ROOM API] DELETE " + urlString);
+        
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
         conn.setRequestMethod("DELETE");
-        conn.setRequestProperty("X-Username", currentUsername);
+        conn.setRequestProperty("X-Username", currentUsername != null ? currentUsername : "");
         conn.setConnectTimeout(TIMEOUT);
         conn.setReadTimeout(TIMEOUT);
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_NO_CONTENT) {
-            throw new IOException("HTTP " + responseCode);
+            String error = readResponse(conn.getErrorStream());
+            throw new IOException("HTTP " + responseCode + ": " + error);
         }
     }
 
     private String readResponse(InputStream inputStream) throws IOException {
         if (inputStream == null) return "";
         
+        StringBuilder response = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-            StringBuilder response = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
                 response.append(line);
             }
-            return response.toString();
         }
-    }
-
-    private String encodeUrl(String value) {
-        try {
-            return java.net.URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
-        } catch (Exception e) {
-            return value;
-        }
+        return response.toString();
     }
 
     // ═══════════════════════════════════════════════════════════
-    // PARSING
+    // JSON PARSING
     // ═══════════════════════════════════════════════════════════
 
     private List<Room> parseRoomList(String json) {
+        List<Room> rooms = new ArrayList<>();
+        
         try {
-            List<Map<String, Object>> rawList = gson.fromJson(json, 
-                new TypeToken<List<Map<String, Object>>>(){}.getType());
+            JsonArray array = JsonParser.parseString(json).getAsJsonArray();
             
-            List<Room> rooms = new ArrayList<>();
-            for (Map<String, Object> raw : rawList) {
-                Room room = mapToRoom(raw);
+            for (int i = 0; i < array.size(); i++) {
+                Room room = parseRoomFromJson(array.get(i).getAsJsonObject());
                 if (room != null) {
                     rooms.add(room);
                 }
             }
-            return rooms;
         } catch (Exception e) {
             System.err.println("[ROOM API] Failed to parse room list: " + e.getMessage());
-            return new ArrayList<>();
         }
+        
+        return rooms;
     }
 
     private Room parseRoom(String json) {
         try {
-            Map<String, Object> raw = gson.fromJson(json, 
-                new TypeToken<Map<String, Object>>(){}.getType());
-            return mapToRoom(raw);
+            JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
+            return parseRoomFromJson(obj);
         } catch (Exception e) {
             System.err.println("[ROOM API] Failed to parse room: " + e.getMessage());
             return null;
         }
     }
 
-    private Room mapToRoom(Map<String, Object> raw) {
+    private Room parseRoomFromJson(JsonObject obj) {
         try {
-            String roomId = (String) raw.get("roomId");
-            String roomName = (String) raw.get("roomName");
-            String ownerUsername = (String) raw.get("ownerUsername");
-
-            Room room = new Room(roomId, roomName, ownerUsername);
+            String roomId = obj.get("roomId").getAsString();
+            String roomName = obj.get("roomName").getAsString();
+            String ownerUsername = obj.get("ownerUsername").getAsString();
+            
+            Room room = new Room(roomName, ownerUsername);
+            
+            // Use reflection or setter to set roomId (since constructor generates new one)
+            // Or modify Room class to accept roomId in constructor
+            setRoomId(room, roomId);
             
             // Set room type
-            String roomType = (String) raw.get("roomType");
-            if (roomType != null) {
-                room.setRoomType(Room.RoomType.valueOf(roomType));
+            if (obj.has("roomType")) {
+                String typeStr = obj.get("roomType").getAsString();
+                room.setRoomType(Room.RoomType.valueOf(typeStr));
             }
-
+            
             // Set description
-            String description = (String) raw.get("description");
-            if (description != null) {
-                room.setDescription(description);
+            if (obj.has("description") && !obj.get("description").isJsonNull()) {
+                room.setDescription(obj.get("description").getAsString());
             }
-
-            // Set player counts
-            if (raw.get("maxPlayers") != null) {
-                room.setMaxPlayers(((Number) raw.get("maxPlayers")).intValue());
+            
+            // Set player count
+            if (obj.has("currentPlayerCount")) {
+                room.setCurrentPlayerCount(obj.get("currentPlayerCount").getAsInt());
             }
-            if (raw.get("currentPlayerCount") != null) {
-                room.setCurrentPlayerCount(((Number) raw.get("currentPlayerCount")).intValue());
+            
+            // Set max players
+            if (obj.has("maxPlayers")) {
+                room.setMaxPlayers(obj.get("maxPlayers").getAsInt());
             }
-
+            
+            // Set dimensions
+            if (obj.has("width")) {
+                room.setWidth(obj.get("width").getAsInt());
+            }
+            if (obj.has("height")) {
+                room.setHeight(obj.get("height").getAsInt());
+            }
+            
             return room;
         } catch (Exception e) {
-            System.err.println("[ROOM API] Failed to map room: " + e.getMessage());
+            System.err.println("[ROOM API] Failed to parse room JSON: " + e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Helper to set roomId (Room class generates its own, but we need the server's ID)
+     */
+    private void setRoomId(Room room, String roomId) {
+        try {
+            java.lang.reflect.Field field = Room.class.getDeclaredField("roomId");
+            field.setAccessible(true);
+            field.set(room, roomId);
+        } catch (Exception e) {
+            System.err.println("[ROOM API] Could not set roomId: " + e.getMessage());
         }
     }
 }

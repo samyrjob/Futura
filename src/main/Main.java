@@ -288,12 +288,13 @@ public class Main {
                 System.out.println("Welcome, " + userData.username() + "!");
                 
                 // Launch game on Swing thread
+                // Launch game on Swing thread
                 SwingUtilities.invokeLater(() -> {
                     // Create the game window
                     GameWindow gameWindow = new GameWindow(userData.username(), userData.gender());
                     
-                    // ✅ NEW - Initialize room controller with authenticated username
-                    GamePanel gamePanel = gameWindow.gamePanel;
+                    // ✅ Initialize room controller with authenticated username
+                    GamePanel gamePanel = gameWindow.getGamePanel();
                     if (gamePanel != null && gamePanel.roomController != null) {
                         System.out.println("[MAIN] Initializing room controller for: " + userData.username());
                         gamePanel.roomController.initialize(userData.username());
