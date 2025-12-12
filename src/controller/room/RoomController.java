@@ -337,28 +337,7 @@ public class RoomController {
     // UPDATE GAME STATE FOR ROOM
     // ═══════════════════════════════════════════════════════════
 
-// ═══════════════════════════════════════════════════════════
-// UPDATE GAME STATE FOR ROOM
-// ═══════════════════════════════════════════════════════════
 
-// private void updateGameForRoom() {
-//     if (currentRoom == null || gp == null) return;
-    
-//     // Update tile map if available
-//     // TODO: Uncomment when tileManager supports this
-//     // if (currentRoom.getTileMap() != null && gp.tileM != null) {
-//     //     gp.tileM.loadRoomTiles(currentRoom.getTileMap());
-//     // }
-    
-//     // Reset player position
-//     // TODO: Adjust based on your Player class field names
-//     // if (gp.player != null) {
-//     //     gp.player.x = 4 * 64;  // Adjust to your tile size and field names
-//     //     gp.player.y = 2 * 64;
-//     // }
-    
-//     System.out.println("[ROOM CTRL] Game updated for room: " + currentRoom.getRoomName());
-// }
 
     // ═══════════════════════════════════════════════════════════
     // UPDATE GAME STATE FOR ROOM

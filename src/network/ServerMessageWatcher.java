@@ -75,9 +75,8 @@ public class ServerMessageWatcher extends Thread {
     // ═══════════════════════════════════════════════════════════
     // PLAYER EVENT HANDLERS
     // ═══════════════════════════════════════════════════════════
-    
+        
     private void handlePlayerJoined(String message) {
-        // Format: playerJoined <username> <gender> <mapX> <mapY> <direction>
         StringTokenizer st = new StringTokenizer(message);
         st.nextToken(); // skip "playerJoined"
         
@@ -86,6 +85,14 @@ public class ServerMessageWatcher extends Thread {
         int mapX = Integer.parseInt(st.nextToken());
         int mapY = Integer.parseInt(st.nextToken());
         String directionStr = st.nextToken();
+        
+        // ═══════════════════════════════════════════════════════════
+        // ✅ FIX: Don't create a remote player for YOURSELF!
+        // ═══════════════════════════════════════════════════════════
+        if (gamePanel.player != null && username.equals(gamePanel.player.name)) {
+            System.out.println("[CLIENT] Ignoring playerJoined for self: " + username);
+            return;
+        }
         
         Gender gender = genderStr.equalsIgnoreCase("FEMALE") ? Gender.FEMALE : Gender.MALE;
         
