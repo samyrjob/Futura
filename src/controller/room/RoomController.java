@@ -3,6 +3,7 @@ package controller.room;
 import main.GamePanel;
 import model.room.Room;
 import service.api.RoomApiClient;
+import service.websocket.RoomWebSocketClient;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +35,7 @@ public class RoomController {
     
     // Listeners
     private List<RoomChangeListener> listeners;
+    private RoomWebSocketClient webSocketClient;
     
     // ═══════════════════════════════════════════════════════════
     // LISTENER INTERFACE
@@ -427,6 +429,7 @@ private void updateGameForRoom() {
     // ═══════════════════════════════════════════════════════════
 
     public void shutdown() {
+        stopLiveUpdates();  // ✅ ADD THIS LINE
         leaveCurrentRoom();
         listeners.clear();
         roomCache.clear();
@@ -451,5 +454,37 @@ private void updateGameForRoom() {
         } else {
             System.err.println("[ROOM CTRL] Cannot return to lobby - no username set");
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // WEBSOCKET - Add these methods
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * Start WebSocket connection for live updates
+     */
+    public void startLiveUpdates() {
+        if (webSocketClient == null) {
+            webSocketClient = new RoomWebSocketClient(this);
+        }
+        webSocketClient.connect();
+        System.out.println("[ROOM CTRL] Live updates started");
+    }
+
+    /**
+     * Stop WebSocket connection
+     */
+    public void stopLiveUpdates() {
+        if (webSocketClient != null) {
+            webSocketClient.disconnect();
+            webSocketClient = null;
+        }
+    }
+
+    /**
+     * Check if WebSocket is connected
+     */
+    public boolean isLiveUpdatesConnected() {
+        return webSocketClient != null && webSocketClient.isConnected();
     }
 }

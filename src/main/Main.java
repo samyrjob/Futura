@@ -298,6 +298,9 @@ public class Main {
                     if (gamePanel != null && gamePanel.roomController != null) {
                         System.out.println("[MAIN] Initializing room controller for: " + userData.username());
                         gamePanel.roomController.initialize(userData.username());
+                         // ✅ START LIVE UPDATES (WebSocket)
+                         
+                        gamePanel.roomController.startLiveUpdates();
                     } else {
                         System.err.println("[MAIN] Warning: Could not initialize room controller");
                     }

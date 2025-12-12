@@ -1,33 +1,29 @@
 package service.websocket;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import controller.room.RoomController;
-import jakarta.websocket.ClientEndpoint;
-import jakarta.websocket.ClientEndpoint;
 
-import jakarta.websocket.*;
 import java.net.URI;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
+import java.util.concurrent.*;
 
 /**
  * WebSocket client for real-time room updates
  * Connects to Spring Boot STOMP endpoint
  */
-@ClientEndpoint
-public class RoomWebSocketClient {
+public class RoomWebSocketClient implements WebSocket.Listener {
 
     private static final String WS_URL = "ws://localhost:9090/ws/websocket";
     
-    private Session session;
+    private WebSocket webSocket;
     private RoomController roomController;
-    private final Gson gson = new Gson();
     private volatile boolean connected = false;
     private volatile boolean shouldReconnect = true;
     private ScheduledExecutorService reconnectExecutor;
+    private StringBuilder messageBuffer = new StringBuilder();
 
     // ═══════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -36,6 +32,7 @@ public class RoomWebSocketClient {
     public RoomWebSocketClient(RoomController roomController) {
         this.roomController = roomController;
         this.reconnectExecutor = Executors.newSingleThreadScheduledExecutor();
+        System.out.println("[WS CLIENT] Created");
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -50,10 +47,22 @@ public class RoomWebSocketClient {
 
         try {
             System.out.println("[WS CLIENT] Connecting to " + WS_URL);
-            WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            container.connectToServer(this, new URI(WS_URL));
+            
+            HttpClient client = HttpClient.newHttpClient();
+            CompletableFuture<WebSocket> wsFuture = client.newWebSocketBuilder()
+                .buildAsync(URI.create(WS_URL), this);
+            
+            webSocket = wsFuture.get(10, TimeUnit.SECONDS);
+            connected = true;
+            
+            System.out.println("[WS CLIENT] ✅ Connected!");
+            
+            // Subscribe to room events (STOMP protocol)
+            subscribeToRooms();
+            
         } catch (Exception e) {
             System.err.println("[WS CLIENT] Connection failed: " + e.getMessage());
+            connected = false;
             scheduleReconnect();
         }
     }
@@ -65,13 +74,9 @@ public class RoomWebSocketClient {
             reconnectExecutor.shutdownNow();
         }
         
-        if (session != null && session.isOpen()) {
-            try {
-                session.close();
-                System.out.println("[WS CLIENT] Disconnected");
-            } catch (Exception e) {
-                System.err.println("[WS CLIENT] Error closing: " + e.getMessage());
-            }
+        if (webSocket != null) {
+            webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Client closing");
+            System.out.println("[WS CLIENT] Disconnected");
         }
         connected = false;
     }
@@ -84,111 +89,154 @@ public class RoomWebSocketClient {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // WEBSOCKET CALLBACKS
-    // ═══════════════════════════════════════════════════════════
-
-    @OnOpen
-    public void onOpen(Session session) {
-        this.session = session;
-        this.connected = true;
-        System.out.println("[WS CLIENT] ✅ Connected to server!");
-        
-        // Subscribe to room events (STOMP-style)
-        subscribeToRooms();
-    }
-
-    @OnMessage
-    public void onMessage(String message) {
-        System.out.println("[WS CLIENT] 📩 Received: " + message);
-        
-        try {
-            // Parse STOMP-style message or direct JSON
-            if (message.contains("\"type\"")) {
-                handleRoomEvent(message);
-            }
-        } catch (Exception e) {
-            System.err.println("[WS CLIENT] Error processing message: " + e.getMessage());
-        }
-    }
-
-    @OnClose
-    public void onClose(Session session, CloseReason reason) {
-        this.connected = false;
-        System.out.println("[WS CLIENT] Connection closed: " + reason.getReasonPhrase());
-        scheduleReconnect();
-    }
-
-    @OnError
-    public void onError(Session session, Throwable error) {
-        System.err.println("[WS CLIENT] Error: " + error.getMessage());
-        this.connected = false;
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    // STOMP MESSAGING
+    // STOMP SUBSCRIPTION
     // ═══════════════════════════════════════════════════════════
 
     private void subscribeToRooms() {
-        // Send STOMP SUBSCRIBE frame
-        String subscribeFrame = "SUBSCRIBE\n" +
-                "id:sub-0\n" +
-                "destination:/topic/rooms\n" +
+        // Send STOMP CONNECT frame
+        String connectFrame = "CONNECT\n" +
+                "accept-version:1.2\n" +
+                "host:localhost\n" +
                 "\n\0";
         
-        sendMessage(subscribeFrame);
-        System.out.println("[WS CLIENT] Subscribed to /topic/rooms");
+        webSocket.sendText(connectFrame, true);
+        
+        // Wait a bit then subscribe
+        reconnectExecutor.schedule(() -> {
+            String subscribeFrame = "SUBSCRIBE\n" +
+                    "id:sub-rooms\n" +
+                    "destination:/topic/rooms\n" +
+                    "\n\0";
+            
+            webSocket.sendText(subscribeFrame, true);
+            System.out.println("[WS CLIENT] Subscribed to /topic/rooms");
+        }, 500, TimeUnit.MILLISECONDS);
     }
 
-    private void sendMessage(String message) {
-        if (session != null && session.isOpen()) {
-            try {
-                session.getBasicRemote().sendText(message);
-            } catch (Exception e) {
-                System.err.println("[WS CLIENT] Send error: " + e.getMessage());
+    // ═══════════════════════════════════════════════════════════
+    // WEBSOCKET LISTENER CALLBACKS
+    // ═══════════════════════════════════════════════════════════
+
+    @Override
+    public void onOpen(WebSocket webSocket) {
+        System.out.println("[WS CLIENT] onOpen");
+        webSocket.request(1);
+    }
+
+    @Override
+    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+        messageBuffer.append(data);
+        
+        if (last) {
+            String message = messageBuffer.toString();
+            messageBuffer = new StringBuilder();
+            
+            // Process the message
+            processMessage(message);
+        }
+        
+        webSocket.request(1);
+        return null;
+    }
+
+    @Override
+    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+        System.out.println("[WS CLIENT] Connection closed: " + reason);
+        connected = false;
+        scheduleReconnect();
+        return null;
+    }
+
+    @Override
+    public void onError(WebSocket webSocket, Throwable error) {
+        System.err.println("[WS CLIENT] Error: " + error.getMessage());
+        connected = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MESSAGE PROCESSING
+    // ═══════════════════════════════════════════════════════════
+
+    private void processMessage(String message) {
+        // STOMP messages have headers and body separated by double newline
+        // The body is JSON after the headers
+        
+        try {
+            // Find the JSON part (after empty line before null terminator)
+            int bodyStart = message.indexOf("\n\n");
+            if (bodyStart == -1) {
+                return;
             }
+            
+            String body = message.substring(bodyStart + 2);
+            // Remove STOMP null terminator if present
+            body = body.replace("\0", "").trim();
+            
+            if (body.isEmpty() || !body.startsWith("{")) {
+                return;
+            }
+            
+            System.out.println("[WS CLIENT] 📩 Received: " + body);
+            handleRoomEvent(body);
+            
+        } catch (Exception e) {
+            // Not a JSON message, ignore (could be CONNECTED frame, etc.)
         }
     }
-
-    // ═══════════════════════════════════════════════════════════
-    // EVENT HANDLING
-    // ═══════════════════════════════════════════════════════════
 
     private void handleRoomEvent(String json) {
         try {
             JsonObject event = JsonParser.parseString(json).getAsJsonObject();
-            String type = event.get("type").getAsString();
             
-            System.out.println("[WS CLIENT] 🔔 Event type: " + type);
+            if (!event.has("type")) {
+                return;
+            }
+            
+            String type = event.get("type").getAsString();
+            System.out.println("[WS CLIENT] 🔔 Event: " + type);
             
             switch (type) {
                 case "ROOM_CREATED":
                     System.out.println("[WS CLIENT] 🏠 New room created!");
-                    roomController.refreshRoomCache();
+                    // Refresh the room list to show new room
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        roomController.refreshRoomCache();
+                    });
                     break;
                     
                 case "ROOM_DELETED":
                     String deletedRoomId = event.get("roomId").getAsString();
                     System.out.println("[WS CLIENT] 🗑️ Room deleted: " + deletedRoomId);
-                    roomController.refreshRoomCache();
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        roomController.refreshRoomCache();
+                    });
                     break;
                     
                 case "ROOM_UPDATED":
                     System.out.println("[WS CLIENT] 🔄 Room updated!");
-                    roomController.refreshRoomCache();
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        roomController.refreshRoomCache();
+                    });
                     break;
                     
                 case "USER_JOINED":
                     String joinedRoom = event.get("roomId").getAsString();
                     int joinedCount = event.get("playerCount").getAsInt();
-                    System.out.println("[WS CLIENT] 👤 User joined room " + joinedRoom + " (now " + joinedCount + " players)");
-                    roomController.updatePlayerCount(joinedRoom, joinedCount);
+                    String joinedUser = event.has("username") ? event.get("username").getAsString() : "unknown";
+                    System.out.println("[WS CLIENT] 👤 " + joinedUser + " joined " + joinedRoom + " (players: " + joinedCount + ")");
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        roomController.updatePlayerCount(joinedRoom, joinedCount);
+                    });
                     break;
                     
                 case "USER_LEFT":
                     String leftRoom = event.get("roomId").getAsString();
                     int leftCount = event.get("playerCount").getAsInt();
-                    System.out.println("[WS CLIENT] 👤 User left room " + leftRoom + " (now " + leftCount + " players)");
-                    roomController.updatePlayerCount(leftRoom, leftCount);
+                    String leftUser = event.has("username") ? event.get("username").getAsString() : "unknown";
+                    System.out.println("[WS CLIENT] 👤 " + leftUser + " left " + leftRoom + " (players: " + leftCount + ")");
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        roomController.updatePlayerCount(leftRoom, leftCount);
+                    });
                     break;
                     
                 default:
@@ -204,6 +252,6 @@ public class RoomWebSocketClient {
     // ═══════════════════════════════════════════════════════════
 
     public boolean isConnected() {
-        return connected && session != null && session.isOpen();
+        return connected;
     }
 }
