@@ -375,17 +375,14 @@ public class RoomController {
             gp.tile_manager.setMapTileNum(tileMap);
             System.out.println("[ROOM CTRL] Loaded custom tile map");
         } else {
-            // Load default map for this room (could be room-specific later)
-            // For now, reload the default map
             gp.tile_manager.loadMap("/res/maps/map01.txt");
             System.out.println("[ROOM CTRL] Loaded default tile map");
         }
         
         // 2. Reset player position to room center
-        int spawnX = currentRoom.getWidth() / 2;  // Center X (e.g., 4 for 9-wide room)
-        int spawnY = currentRoom.getHeight() / 2; // Center Y (e.g., 2 for 5-tall room)
+        int spawnX = currentRoom.getWidth() / 2;
+        int spawnY = currentRoom.getHeight() / 2;
         
-        // Move player to spawn point
         if (gp.player != null) {
             gp.player.setPosition(spawnX, spawnY);
             System.out.println("[ROOM CTRL] Player spawned at tile: " + spawnX + ", " + spawnY);
@@ -394,10 +391,12 @@ public class RoomController {
         // 3. Clear remote players (they're in a different room now)
         gp.removeAllRemotePlayers();
         
-        // 4. Notify network of room change (if connected)
+        // ═══════════════════════════════════════════════════════════
+        // 4. ✅ FIXED - Actually notify server of room change!
+        // ═══════════════════════════════════════════════════════════
         if (gp.networkManager != null && gp.networkManager.isConnected()) {
-            // Could send room change message here
-            System.out.println("[ROOM CTRL] TODO: Notify server of room change");
+            gp.networkManager.sendRoomChange(currentRoomId);
+            System.out.println("[ROOM CTRL] ✅ Notified server of room change to: " + currentRoomId);
         }
         
         // 5. Force repaint
