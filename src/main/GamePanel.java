@@ -608,6 +608,11 @@ public class GamePanel extends JPanel implements Runnable {
     public void cleanup() {
         System.out.println("[GAME] Cleaning up...");
 
+                // ✅ ADD THIS - Shutdown room controller (closes WebSocket properly)
+        if (roomController != null) {
+            roomController.shutdown();
+        }
+
         // Shutdown friend system (controller handles Kafka internally)
         if (friendsPanel != null) {
             friendsPanel.shutdown();
