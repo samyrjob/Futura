@@ -4,7 +4,7 @@ import view.shared.BaseToolbarPanel;
 import view.shared.BasePanelLayout;
 import view.shared.PanelRenderer;
 import model.room.Room;
-import controller.room.RoomController;
+import controller.room.*;
 import main.GamePanel;
 
 import java.awt.*;
@@ -25,7 +25,7 @@ import javax.swing.JOptionPane;
  * - Create room button
  * - Enter room on click
  */
-public class RoomPanel extends BaseToolbarPanel implements RoomController.RoomChangeListener {
+public class RoomPanel extends BaseToolbarPanel implements RoomListenerManager.RoomChangeListener {
     
     private RoomController controller;
     private RoomPanelLayout roomLayout;  // Typed reference for room-specific methods
