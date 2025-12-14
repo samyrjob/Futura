@@ -202,7 +202,7 @@ public class ServerMessageWatcher extends Thread {
                 
                 if (targetRoom != null) {
                     // Room exists - enter it
-                    boolean success = gamePanel.roomController.enterRoom(targetRoomId, gamePanel.player.name);
+                    boolean success = gamePanel.roomController.enterRoom(targetRoomId);
                     
                     if (success) {
                         System.out.println("[CLIENT] Successfully moved to room: " + targetRoomId);
