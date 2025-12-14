@@ -236,7 +236,7 @@ public class RoomNavigator {
     private void createNewRoom() {
         String roomName = promptForRoomName();
         if (roomName != null && !roomName.trim().isEmpty()) {
-            Room newRoom = roomController.createRoom(roomName, gp.player.name);
+            Room newRoom = roomController.createRoom(roomName);
             currentTab = Tab.MY_ROOMS;
             System.out.println("Created room: " + newRoom.getRoomName());
         }
@@ -252,7 +252,7 @@ public class RoomNavigator {
     }
     
     private void enterRoom(Room room) {
-        boolean success = roomController.enterRoom(room.getRoomId(), gp.player.name);
+        boolean success = roomController.enterRoom(room.getRoomId());
         if (success) {
             visible = false;
             System.out.println("Entering room: " + room.getRoomName());
@@ -424,7 +424,7 @@ public class RoomNavigator {
             case PUBLIC_ROOMS:
                 return roomController.getPublicRooms();
             case MY_ROOMS:
-                return roomController.getMyRooms(gp.player.name);
+                return roomController.getMyRooms();
             default:
                 return new ArrayList<>();
         }

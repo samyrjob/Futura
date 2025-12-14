@@ -195,7 +195,7 @@ public class RoomPanel extends BaseToolbarPanel implements RoomListenerManager.R
         );
         
         if (roomName != null && !roomName.trim().isEmpty()) {
-            Room newRoom = controller.createRoom(roomName, gp.player.name);
+            Room newRoom = controller.createRoom(roomName);
             if (newRoom != null) {
                 currentTab = RoomPanelLayout.Tab.MY_ROOMS;
                 scrollOffset = 0;
@@ -205,8 +205,10 @@ public class RoomPanel extends BaseToolbarPanel implements RoomListenerManager.R
     }
     
     private void enterRoom(Room room) {
+
+        String username = controller.getUsername();
         // Check if room is locked
-        if (room.getRoomType() == Room.RoomType.LOCKED && !room.isOwner(gp.player.name)) {
+        if (room.getRoomType() == Room.RoomType.LOCKED && !room.isOwner(username)) {
             String password = JOptionPane.showInputDialog(
                 null,
                 "Enter room password:",
@@ -217,7 +219,6 @@ public class RoomPanel extends BaseToolbarPanel implements RoomListenerManager.R
             if (password != null) {
                 boolean success = controller.enterRoomWithPassword(
                     room.getRoomId(), 
-                    gp.player.name, 
                     password
                 );
                 
@@ -234,7 +235,7 @@ public class RoomPanel extends BaseToolbarPanel implements RoomListenerManager.R
             }
         } else {
             // Normal room entry
-            boolean success = controller.enterRoom(room.getRoomId(), gp.player.name);
+            boolean success = controller.enterRoom(room.getRoomId());
             if (success) {
                 visible = false;
                 System.out.println("[ROOM PANEL] Entering room: " + room.getRoomName());
@@ -258,7 +259,7 @@ public class RoomPanel extends BaseToolbarPanel implements RoomListenerManager.R
             case PUBLIC_ROOMS:
                 return controller.getPublicRooms();
             case MY_ROOMS:
-                return controller.getMyRooms(gp.player.name);
+                return controller.getMyRooms();
             case FAVORITES:
                 return controller.getFavoriteRooms();
             default:
